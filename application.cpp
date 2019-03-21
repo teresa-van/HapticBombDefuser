@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
     cMultiMesh* object = new cMultiMesh();
 
-    object->loadFromFile("models/bomb-rounded.obj");
+    object->loadFromFile("models/timer.obj");
     object->createAABBCollisionDetector(toolRadius);
     object->computeBTN();
 
@@ -234,6 +234,7 @@ int main(int argc, char* argv[])
     mesh->m_texture = albedoMap;
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
 
     mesh->setUseTexture(true);
 

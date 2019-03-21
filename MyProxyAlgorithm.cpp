@@ -91,6 +91,8 @@ void MyProxyAlgorithm::updateForce()
 
         if (MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(c0->m_object->m_material))
         {
+            if (!material->hasTexture) return;
+            
             cVector3d F = -material->getStiffness() * (m_deviceGlobalPos - m_proxyGlobalPos);
             double roughnessFactor = 5.0;
 

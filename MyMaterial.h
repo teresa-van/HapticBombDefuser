@@ -35,7 +35,7 @@ public:
     double m_myMaterialProperty;
     chai3d::cTexture2dPtr m_height_map;
     chai3d::cTexture2dPtr m_roughness_map;
-    int Type;
+    bool hasTexture;
 };
 
 //------------------------------------------------------------------------------
