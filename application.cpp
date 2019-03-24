@@ -64,6 +64,14 @@ int texIndex = -1;
 
 cVector3d workspaceOffset(0.0, 0.0, 0.0);
 cVector3d cameraLookAt(0.0, 0.0, 0.0);
+/*
+cVector3d camPos = cVector3d(0.0, 0.0, 0.0);
+cVector3d camDir = cVector3d(0.0, 0.0, 0.0);
+cVector3d xAxis = cVector3d(0.0001, 0.0, 0.0);
+cVector3d yAxis = cVector3d(0.0, 0.0001, 0.0);
+cVector3d zAxis = cVector3d(0.0, 0.0, 0.0001);
+*/
+cMultiMesh* object;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -198,11 +206,12 @@ int main(int argc, char* argv[])
     // [CPSC.86] TEXTURED OBJECTS
     //--------------------------------------------------------------------------
 
-    cMultiMesh* object = new cMultiMesh();
+    object = new cMultiMesh();
 
-    object->loadFromFile("models/timer.obj");
+    object->loadFromFile("models/bomb-rounded.obj");
     object->createAABBCollisionDetector(toolRadius);
     object->computeBTN();
+//	object->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
 
     cMesh* mesh = object->getMesh(0);
 
@@ -211,7 +220,7 @@ int main(int argc, char* argv[])
     mesh->m_material->setUseHapticShading(true);
     object->setStiffness(2000.0, true);
 
-    MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
 
     cTexture2dPtr albedoMap = cTexture2d::create();
     albedoMap->loadFromFile("textures/rust.png");
@@ -238,8 +247,33 @@ int main(int argc, char* argv[])
 
     mesh->setUseTexture(true);
 
-    world->addChild(object);
+	cMultiMesh* panal0 = new cMultiMesh();
+	panal0->loadFromFile("models/tray.obj");
+	panal0->createAABBCollisionDetector(toolRadius);
+	panal0->computeBTN();
+	
+//	panal0->scale(0.25);
+	panal0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+	
 
+	cMesh* pmesh0 = panal0->getMesh(0);
+	pmesh0->m_material = MyMaterial::create();
+	pmesh0->m_material->setWhiteAzure();
+	pmesh0->m_material->setUseHapticShading(true);
+	panal0->setStiffness(2000.0, true);
+	MyMaterialPtr pmat0 = std::dynamic_pointer_cast<MyMaterial>(pmesh0->m_material);
+	pmesh0->m_texture = albedoMap;
+    pmat0->m_height_map = heightMap;
+    pmat0->m_roughness_map = roughnessMap;
+    pmat0->hasTexture = true;
+
+    mesh->setUseTexture(true);
+
+object->addChild(panal0);
+    world->addChild(object);
+	
+//	world->addChild(panal0);
+	
 
     //--------------------------------------------------------------------------
     // HAPTIC DEVICE
@@ -444,6 +478,12 @@ void updateHaptics(void)
 {
     simulationRunning  = true;
     simulationFinished = false;
+/*    
+	cVector3d nextCamPos = camPos;
+	cVector3d nextCamDir = camDir;
+	double xoffset = 0;
+	double yoffset = 0;
+*/
 
     bool leftPressed = false;
     bool rightPressed = false;
@@ -470,20 +510,22 @@ void updateHaptics(void)
         hapticDevice->getUserSwitch(3, right);
         
         if (middle) midPressed = true;
-        else if (left) leftPressed = true;
-        else if (right) rightPressed = true;
+        if (left) leftPressed = true;
+        if (right) rightPressed = true;
 
-        if (midPressed && !middle)
+        if (midPressed)// && !middle)
         {
-
+			midPressed = false;
         }
-        else if (leftPressed && !left)
+        if (leftPressed)// && !left)
         {
-
+			object->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
+			leftPressed = false;
         }
-        else if (rightPressed && !right)
+        if (rightPressed)// && !right)
         {
-
+			object->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
+			rightPressed = false;
         }
 
         world->computeGlobalPositions();
@@ -504,12 +546,67 @@ void updateHaptics(void)
         cVector3d torque(0, 0, 0);
         double gripperForce = 0.0;
 
+        tool->applyToDevice();
 
         /////////////////////////////////////////////////////////////////////
         // APPLY FORCES
         /////////////////////////////////////////////////////////////////////
-
-        tool->applyToDevice();
+/*		cVector3d toolPos = tool->getLocalPos();
+		if ((position.x() > 0.02 && xoffset < 0.1) && (position.y() > 0.02 && yoffset < 0.1)) {
+			nextCamPos = nextCamPos + xAxis + yAxis;
+			nextCamDir = nextCamDir + xAxis + yAxis;
+			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y() + 0.0001, toolPos.z());
+			xoffset += 0.0001;
+			yoffset += 0.0001;
+		}
+		else if ((position.x() < -0.02 && xoffset > -0.1) && (position.y() < -0.02 && yoffset > -0.1)) {
+			nextCamPos = nextCamPos - xAxis - yAxis;
+			nextCamDir = nextCamDir - xAxis - yAxis;
+			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y() - 0.0001, toolPos.z());
+			xoffset -= 0.0001;
+			yoffset -= 0.0001;
+		}
+		else if ((position.x() > 0.02 && xoffset < 0.1) && (position.y() < -0.02 && yoffset > -0.1)) {
+			nextCamPos = nextCamPos + xAxis - yAxis;
+			nextCamDir = nextCamDir + xAxis - yAxis;
+			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y() - 0.0001, toolPos.z());
+			xoffset += 0.0001;
+			yoffset -= 0.0001;
+		}
+		else if ((position.x() < -0.02 && xoffset > -0.1) && (position.y() > 0.02 && yoffset < 0.1)) {
+			nextCamPos = nextCamPos - xAxis + yAxis;
+			nextCamDir = nextCamDir - xAxis + yAxis;
+			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y() + 0.0001, toolPos.z());
+			xoffset -= 0.0001;
+			yoffset += 0.0001;
+		}
+		else if (position.x() > 0.02 && xoffset < 0.1) {
+			nextCamPos = nextCamPos + xAxis;
+			nextCamDir = nextCamDir + xAxis;
+			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y(), toolPos.z());
+			xoffset += 0.0001;
+		}
+		else if (position.x() < -0.02 && xoffset > -0.1) {
+			nextCamPos = nextCamPos - xAxis;
+			nextCamDir = nextCamDir - xAxis;
+			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y(), toolPos.z());
+			xoffset -= 0.0001;
+		}
+		else if (position.y() > 0.02 && yoffset < 0.1) {
+			nextCamPos = nextCamPos + yAxis;
+			nextCamDir = nextCamDir + yAxis;
+			tool->setLocalPos(toolPos.x(), toolPos.y() + 0.0001, toolPos.z());
+			yoffset += 0.0001;
+		}
+		else if (position.y() < -0.02 && yoffset > -0.1) {
+			nextCamPos = nextCamPos - yAxis;
+			nextCamDir = nextCamDir - yAxis;
+			tool->setLocalPos(toolPos.x(), toolPos.y() - 0.0001, toolPos.z());
+			yoffset -= 0.0001;
+		}
+				
+		camera->set(nextCamPos, nextCamDir, cVector3d(0,0,1));
+*/
         updateWorkspace(position);
 
         freqCounterHaptics.signal(1);
