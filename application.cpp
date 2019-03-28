@@ -263,7 +263,51 @@ void CreatePanel()
 
     // bomb->addChild(panel0);
 }
+void CreateBrailleLegend()
+{
+	cMesh * mesh = new cMesh();
+	cCreatePlane(mesh,0.01,0.01,cVector3d(0.0125,0.0065,0.005));
+	    mesh->createBruteForceCollisionDetector();
+        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
+        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+        mesh->scale(1.5);
+        mesh->setUseTransparency(true, true);
+	
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
+    mesh->setStiffness(2000.0, true);
 
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    mesh->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+
+	mesh->setUseTexture(true);
+	
+	bomb->addChild(mesh);
+	
+}
 void CreateTimer()
 {
     // Create timer object
@@ -531,6 +575,8 @@ int main(int argc, char* argv[])
     CreateNumberTextures();
     CreateTimer();
     UpdateTimer();
+    
+    CreateBrailleLegend();
     CreateDeathScreen();
     
     cPrecisionClock clock;
