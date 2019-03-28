@@ -59,6 +59,7 @@ cVector3d cameraLookAt(0.0, 0.0, 0.0);
 double toolRadius = 0.0;
 
 cMultiMesh* bomb;
+int timeLimit[4] = {4,4,4,4}; // mm:ss
 
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
@@ -77,6 +78,7 @@ const string numberTextureFiles[11] =
 };
 
 vector<cMesh*> timerNumbers;
+double startTime;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -121,8 +123,6 @@ void CreateTimer()
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
 
-    world->addChild(timer);
-
     // Create timer number planes
     double spacing = 0.0058;
     double posX = -0.01;
@@ -130,12 +130,12 @@ void CreateTimer()
     {
         cMesh * mesh = new cMesh();
         cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
-        world->addChild(mesh);
+        timer->addChild(mesh);
         mesh->createBruteForceCollisionDetector();
         mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
         mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 
-        mesh->m_texture = numberTextures[0];
+        mesh->m_texture = numberTextures[timeLimit[i]];
         mesh->setUseTexture(true);
         timer->addChild(mesh);
         timerNumbers.push_back(mesh);
@@ -143,14 +143,61 @@ void CreateTimer()
 
     mesh = new cMesh();
     cCreatePlane(mesh, 0.00275, 0.015, cVector3d(0.0, 0.0, 0.005));
-    world->addChild(mesh);
+    timer->addChild(mesh);
     mesh->createBruteForceCollisionDetector();
     mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
     mesh->m_texture = numberTextures[10];
     mesh->setUseTexture(true);
-    timer->addChild(mesh);
-    timerNumbers.push_back(mesh);
+
+    cMesh * temp = timerNumbers[3];
+    timerNumbers[3] = timerNumbers[2];
+    timerNumbers[2] = temp;
+
+    world->addChild(timer);
+}
+
+void updateTimer()
+{
+    int i = 0;
+    for (cMesh * m : timerNumbers)
+    {
+        m->m_texture = numberTextures[timeLimit[i]];
+        i++;
+    }
+}
+
+void updateTimeElapsed()
+{
+    if (timeLimit[3] == 0)
+    {
+        if (timeLimit[2] == 0)
+        {
+            if (timeLimit[1] == 0)
+            {
+                timeLimit[0] -= 1;
+                timeLimit[1] = 9;
+                timeLimit[2] = 5;
+                timeLimit[3] = 9;
+            }
+            else
+            {
+                timeLimit[1] -= 1;
+                timeLimit[2] = 5;
+                timeLimit[3] = 9;
+            }
+        }
+        else
+        {
+            timeLimit[2] -= 1;
+            timeLimit[3] = 9;
+        }
+    }
+    else
+    {
+        timeLimit[3] -= 1;
+    }
+    // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -380,11 +427,23 @@ int main(int argc, char* argv[])
 
     CreateNumberTextures();
     CreateTimer();
+    cPrecisionClock clock;
+    startTime = clock.getCPUTimeSeconds();
 
     windowSizeCallback(window, width, height);
 
     while (!glfwWindowShouldClose(window))
     {
+        double previousTime = clock.getCPUTimeSeconds();
+        double deltaTime = previousTime - startTime;
+        // cout << deltaTime << "\n";
+        if (deltaTime >= 1)
+        {
+            updateTimeElapsed();
+            updateTimer();
+            startTime = previousTime;
+        }
+
         glfwGetWindowSize(window, &width, &height);
         updateGraphics();
         glfwSwapBuffers(window);
