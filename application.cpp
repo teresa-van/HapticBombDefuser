@@ -19,17 +19,9 @@ using namespace std;
 // GENERAL SETTINGS
 //------------------------------------------------------------------------------
 
-// stereo Mode
-/*
-    C_STEREO_DISABLED:            Stereo is disabled
-    C_STEREO_ACTIVE:              Active stereo for OpenGL NVDIA QUADRO cards
-    C_STEREO_PASSIVE_LEFT_RIGHT:  Passive stereo where L/R images are rendered next to each other
-    C_STEREO_PASSIVE_TOP_BOTTOM:  Passive stereo where L/R images are rendered above each other
-*/
 cStereoMode stereoMode = C_STEREO_DISABLED;
 bool fullscreen = false;
 bool mirroredDisplay = false;
-
 
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
@@ -45,7 +37,6 @@ cLabel* labelRates;
 cLabel* labelDebug;
 
 cToolCursor* tool;
-
 MyProxyAlgorithm* proxyAlgorithm;
 
 bool simulationRunning = false;
@@ -64,14 +55,28 @@ int texIndex = -1;
 
 cVector3d workspaceOffset(0.0, 0.0, 0.0);
 cVector3d cameraLookAt(0.0, 0.0, 0.0);
-/*
-cVector3d camPos = cVector3d(0.0, 0.0, 0.0);
-cVector3d camDir = cVector3d(0.0, 0.0, 0.0);
-cVector3d xAxis = cVector3d(0.0001, 0.0, 0.0);
-cVector3d yAxis = cVector3d(0.0, 0.0001, 0.0);
-cVector3d zAxis = cVector3d(0.0, 0.0, 0.0001);
-*/
-cMultiMesh* object;
+
+double toolRadius = 0.0;
+
+cMultiMesh* bomb;
+
+vector<cTexture2dPtr> numberTextures;
+const string numberTextureFiles[11] = 
+{
+    "0.png",
+    "1.png",
+    "2.png",
+    "3.png",
+    "4.png",
+    "5.png",
+    "6.png",
+    "7.png",
+    "8.png",
+    "9.png",
+    "dots.png",
+};
+
+vector<cMesh*> timerNumbers;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -84,13 +89,69 @@ void updateGraphics(void);
 void updateHaptics(void);
 void close(void);
 
-//==============================================================================
-/*
-    TEMPLATE:    application.cpp
+void CreateNumberTextures()
+{
+    for (string s : numberTextureFiles)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + s);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        numberTextures.push_back(tex);
+    }
+}
 
-    Description of your application.
-*/
-//==============================================================================
+void CreateTimer()
+{
+    // Create timer object
+    cMultiMesh * timer = new cMultiMesh();
+
+    timer->loadFromFile("models/timer.obj");
+    timer->createAABBCollisionDetector(toolRadius);
+    timer->computeBTN();
+
+    cMesh* mesh = timer->getMesh(0);
+
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhiteAzure();
+    mesh->m_material->setUseHapticShading(true);
+    timer->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+    world->addChild(timer);
+
+    // Create timer number planes
+    double spacing = 0.0058;
+    double posX = -0.01;
+    for (int i = 0; i < 4; i++)
+    {
+        cMesh * mesh = new cMesh();
+        cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
+        world->addChild(mesh);
+        mesh->createBruteForceCollisionDetector();
+        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+        mesh->m_texture = numberTextures[0];
+        mesh->setUseTexture(true);
+        timer->addChild(mesh);
+        timerNumbers.push_back(mesh);
+    }
+
+    mesh = new cMesh();
+    cCreatePlane(mesh, 0.00275, 0.015, cVector3d(0.0, 0.0, 0.005));
+    world->addChild(mesh);
+    mesh->createBruteForceCollisionDetector();
+    mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+    mesh->m_texture = numberTextures[10];
+    mesh->setUseTexture(true);
+    timer->addChild(mesh);
+    timerNumbers.push_back(mesh);
+}
 
 int main(int argc, char* argv[])
 {
@@ -174,7 +235,6 @@ int main(int argc, char* argv[])
     // WORLD - CAMERA - LIGHTING
     //--------------------------------------------------------------------------
 
-    // create a new world.
     world = new cWorld();
     world->m_backgroundColor.setBlack();
 
@@ -200,81 +260,73 @@ int main(int argc, char* argv[])
     light->m_shadowMap->setQualityHigh();
     light->setCutOffAngleDeg(10);
 
-    double toolRadius = 0.0;
-
     //--------------------------------------------------------------------------
     // [CPSC.86] TEXTURED OBJECTS
     //--------------------------------------------------------------------------
 
-    object = new cMultiMesh();
+    // bomb = new cMultiMesh();
 
-    object->loadFromFile("models/bomb-rounded.obj");
-    object->createAABBCollisionDetector(toolRadius);
-    object->computeBTN();
-//	object->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+    // bomb->loadFromFile("models/bomb-rounded.obj");
+    // bomb->createAABBCollisionDetector(toolRadius);
+    // bomb->computeBTN();
 
-    cMesh* mesh = object->getMesh(0);
+    // cMesh* mesh = bomb->getMesh(0);
 
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhiteAzure();
-    mesh->m_material->setUseHapticShading(true);
-    object->setStiffness(2000.0, true);
+    // mesh->m_material = MyMaterial::create();
+    // mesh->m_material->setWhiteAzure();
+    // mesh->m_material->setUseHapticShading(true);
+    // bomb->setStiffness(2000.0, true);
 
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+	// MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
 
-    cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/rust.png");
-    albedoMap->setWrapModeS(GL_REPEAT);
-    albedoMap->setWrapModeT(GL_REPEAT);
-    albedoMap->setUseMipmaps(true);
+    // cTexture2dPtr albedoMap = cTexture2d::create();
+    // albedoMap->loadFromFile("textures/rust.png");
+    // albedoMap->setWrapModeS(GL_REPEAT);
+    // albedoMap->setWrapModeT(GL_REPEAT);
+    // albedoMap->setUseMipmaps(true);
 
-    cTexture2dPtr heightMap = cTexture2d::create();
-    heightMap->loadFromFile("textures/rust-height.png");
-    heightMap->setWrapModeS(GL_REPEAT);
-    heightMap->setWrapModeT(GL_REPEAT);
-    heightMap->setUseMipmaps(true);
+    // cTexture2dPtr heightMap = cTexture2d::create();
+    // heightMap->loadFromFile("textures/rust-height.png");
+    // heightMap->setWrapModeS(GL_REPEAT);
+    // heightMap->setWrapModeT(GL_REPEAT);
+    // heightMap->setUseMipmaps(true);
 
-    cTexture2dPtr roughnessMap = cTexture2d::create();
-    roughnessMap->loadFromFile("textures/rust-roughness.png");
-    roughnessMap->setWrapModeS(GL_REPEAT);
-    roughnessMap->setWrapModeT(GL_REPEAT);
-    roughnessMap->setUseMipmaps(true);
+    // cTexture2dPtr roughnessMap = cTexture2d::create();
+    // roughnessMap->loadFromFile("textures/rust-roughness.png");
+    // roughnessMap->setWrapModeS(GL_REPEAT);
+    // roughnessMap->setWrapModeT(GL_REPEAT);
+    // roughnessMap->setUseMipmaps(true);
 
-    mesh->m_texture = albedoMap;
-    material->m_height_map = heightMap;
-    material->m_roughness_map = roughnessMap;
-    material->hasTexture = true;
+    // mesh->m_texture = albedoMap;
+    // material->m_height_map = heightMap;
+    // material->m_roughness_map = roughnessMap;
+    // material->hasTexture = true;
 
-    mesh->setUseTexture(true);
+    // mesh->setUseTexture(true);
 
-	cMultiMesh* panal0 = new cMultiMesh();
-	panal0->loadFromFile("models/tray.obj");
-	panal0->createAABBCollisionDetector(toolRadius);
-	panal0->computeBTN();
+	// cMultiMesh* panel0 = new cMultiMesh();
+	// panel0->loadFromFile("models/tray.obj");
+	// panel0->createAABBCollisionDetector(toolRadius);
+	// panel0->computeBTN();
 	
-//	panal0->scale(0.25);
-	panal0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+	// panel0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+
+	// cMesh* pMesh0 = panel0->getMesh(0);
+	// pMesh0->m_material = MyMaterial::create();
+	// pMesh0->m_material->setWhiteAzure();
+	// pMesh0->m_material->setUseHapticShading(true);
+	// panel0->setStiffness(2000.0, true);
+	// MyMaterialPtr pMat0 = std::dynamic_pointer_cast<MyMaterial>(pMesh0->m_material);
+	// pMesh0->m_texture = albedoMap;
+    // pMat0->m_height_map = heightMap;
+    // pMat0->m_roughness_map = roughnessMap;
+    // pMat0->hasTexture = true;
+
+    // pMesh0->setUseTexture(true);
+
+    // bomb->addChild(panel0);
+    // world->addChild(bomb);
 	
-
-	cMesh* pmesh0 = panal0->getMesh(0);
-	pmesh0->m_material = MyMaterial::create();
-	pmesh0->m_material->setWhiteAzure();
-	pmesh0->m_material->setUseHapticShading(true);
-	panal0->setStiffness(2000.0, true);
-	MyMaterialPtr pmat0 = std::dynamic_pointer_cast<MyMaterial>(pmesh0->m_material);
-	pmesh0->m_texture = albedoMap;
-    pmat0->m_height_map = heightMap;
-    pmat0->m_roughness_map = roughnessMap;
-    pmat0->hasTexture = true;
-
-    mesh->setUseTexture(true);
-
-object->addChild(panal0);
-    world->addChild(object);
-	
-//	world->addChild(panal0);
-	
-
     //--------------------------------------------------------------------------
     // HAPTIC DEVICE
     //--------------------------------------------------------------------------
@@ -325,6 +377,9 @@ object->addChild(panal0);
     //--------------------------------------------------------------------------
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
+
+    CreateNumberTextures();
+    CreateTimer();
 
     windowSizeCallback(window, width, height);
 
@@ -478,12 +533,6 @@ void updateHaptics(void)
 {
     simulationRunning  = true;
     simulationFinished = false;
-/*    
-	cVector3d nextCamPos = camPos;
-	cVector3d nextCamDir = camDir;
-	double xoffset = 0;
-	double yoffset = 0;
-*/
 
     bool leftPressed = false;
     bool rightPressed = false;
@@ -497,7 +546,7 @@ void updateHaptics(void)
 
         cVector3d position;
         hapticDevice->getPosition(position);
-        // read orientation
+
         cMatrix3d rotation;
         hapticDevice->getRotation(rotation);
 
@@ -519,12 +568,12 @@ void updateHaptics(void)
         }
         if (leftPressed)// && !left)
         {
-			object->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
 			leftPressed = false;
         }
         if (rightPressed)// && !right)
         {
-			object->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
 			rightPressed = false;
         }
 
@@ -551,62 +600,7 @@ void updateHaptics(void)
         /////////////////////////////////////////////////////////////////////
         // APPLY FORCES
         /////////////////////////////////////////////////////////////////////
-/*		cVector3d toolPos = tool->getLocalPos();
-		if ((position.x() > 0.02 && xoffset < 0.1) && (position.y() > 0.02 && yoffset < 0.1)) {
-			nextCamPos = nextCamPos + xAxis + yAxis;
-			nextCamDir = nextCamDir + xAxis + yAxis;
-			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y() + 0.0001, toolPos.z());
-			xoffset += 0.0001;
-			yoffset += 0.0001;
-		}
-		else if ((position.x() < -0.02 && xoffset > -0.1) && (position.y() < -0.02 && yoffset > -0.1)) {
-			nextCamPos = nextCamPos - xAxis - yAxis;
-			nextCamDir = nextCamDir - xAxis - yAxis;
-			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y() - 0.0001, toolPos.z());
-			xoffset -= 0.0001;
-			yoffset -= 0.0001;
-		}
-		else if ((position.x() > 0.02 && xoffset < 0.1) && (position.y() < -0.02 && yoffset > -0.1)) {
-			nextCamPos = nextCamPos + xAxis - yAxis;
-			nextCamDir = nextCamDir + xAxis - yAxis;
-			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y() - 0.0001, toolPos.z());
-			xoffset += 0.0001;
-			yoffset -= 0.0001;
-		}
-		else if ((position.x() < -0.02 && xoffset > -0.1) && (position.y() > 0.02 && yoffset < 0.1)) {
-			nextCamPos = nextCamPos - xAxis + yAxis;
-			nextCamDir = nextCamDir - xAxis + yAxis;
-			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y() + 0.0001, toolPos.z());
-			xoffset -= 0.0001;
-			yoffset += 0.0001;
-		}
-		else if (position.x() > 0.02 && xoffset < 0.1) {
-			nextCamPos = nextCamPos + xAxis;
-			nextCamDir = nextCamDir + xAxis;
-			tool->setLocalPos(toolPos.x() + 0.0001, toolPos.y(), toolPos.z());
-			xoffset += 0.0001;
-		}
-		else if (position.x() < -0.02 && xoffset > -0.1) {
-			nextCamPos = nextCamPos - xAxis;
-			nextCamDir = nextCamDir - xAxis;
-			tool->setLocalPos(toolPos.x() - 0.0001, toolPos.y(), toolPos.z());
-			xoffset -= 0.0001;
-		}
-		else if (position.y() > 0.02 && yoffset < 0.1) {
-			nextCamPos = nextCamPos + yAxis;
-			nextCamDir = nextCamDir + yAxis;
-			tool->setLocalPos(toolPos.x(), toolPos.y() + 0.0001, toolPos.z());
-			yoffset += 0.0001;
-		}
-		else if (position.y() < -0.02 && yoffset > -0.1) {
-			nextCamPos = nextCamPos - yAxis;
-			nextCamDir = nextCamDir - yAxis;
-			tool->setLocalPos(toolPos.x(), toolPos.y() - 0.0001, toolPos.z());
-			yoffset -= 0.0001;
-		}
-				
-		camera->set(nextCamPos, nextCamDir, cVector3d(0,0,1));
-*/
+
         updateWorkspace(position);
 
         freqCounterHaptics.signal(1);
