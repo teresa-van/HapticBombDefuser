@@ -238,37 +238,31 @@ void CreateBomb()
     world->addChild(bomb);
 }
 
-// TEMPORARY PLACEMENT, in the future we want to pass in a file and position, maybe
-void CreatePanel()
+void CreatePanels()
 {
-    	// cMultiMesh* panel0 = new cMultiMesh();
-	// panel0->loadFromFile("models/tray.obj");
-	// panel0->createAABBCollisionDetector(toolRadius);
-	// panel0->computeBTN();
-	
-	// panel0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+    cMultiMesh* panel = new cMultiMesh();
+	panel->loadFromFile("models/basepanel.obj");
+	panel->createAABBCollisionDetector(toolRadius);
+	panel->computeBTN();
 
-	// cMesh* pMesh0 = panel0->getMesh(0);
-	// pMesh0->m_material = MyMaterial::create();
-	// pMesh0->m_material->setWhiteAzure();
-	// pMesh0->m_material->setUseHapticShading(true);
-	// panel0->setStiffness(2000.0, true);
-	// MyMaterialPtr pMat0 = std::dynamic_pointer_cast<MyMaterial>(pMesh0->m_material);
-	// pMesh0->m_texture = albedoMap;
-    // pMat0->m_height_map = heightMap;
-    // pMat0->m_roughness_map = roughnessMap;
-    // pMat0->hasTexture = true;
+	cMesh* mesh = panel->getMesh(0);
+	mesh->m_material = MyMaterial::create();
+	mesh->m_material->setWhiteAzure();
+	mesh->m_material->setUseHapticShading(true);
+	panel->setStiffness(2000.0, true);
 
-    // pMesh0->setUseTexture(true);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
 
-    // bomb->addChild(panel0);
+    panel->setLocalPos(cVector3d(0.006, 0, 0.0095));
+
+    bomb->addChild(panel);
 }
 
 void CreateTimer()
 {
     // Create timer object
     cMultiMesh * timer = new cMultiMesh();
-
     timer->loadFromFile("models/timer.obj");
     timer->createAABBCollisionDetector(toolRadius);
     timer->computeBTN();
@@ -528,9 +522,13 @@ int main(int argc, char* argv[])
     
     CreateEnvironment();
     CreateBomb();
+    
     CreateNumberTextures();
     CreateTimer();
     UpdateTimer();
+
+    CreatePanels();
+
     CreateDeathScreen();
     
     cPrecisionClock clock;
