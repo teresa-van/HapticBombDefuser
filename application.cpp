@@ -104,6 +104,66 @@ void CreateNumberTextures()
     }
 }
 
+void CreateEnvironment()
+{
+    cMesh * background = new cMesh();
+    cCreatePlane(background, 0.25, 0.25, cVector3d(0, 0, -0.1));
+    background->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    background->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/background.jpg");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+    background->m_texture = albedoMap;
+    background->setUseTexture(true);
+
+    world->addChild(background);
+
+    /////////////////////////////////////////////////////////////////////////////////
+
+    cMesh * table = new cMesh();
+    cCreatePlane(table, 0.12, 0.075, cVector3d(0, 0, -0.025));
+    table->createBruteForceCollisionDetector();
+    table->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    table->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 80);
+    table->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+    table->m_material = MyMaterial::create();
+    table->m_material->setBrownWheat();
+    table->m_material->setUseHapticShading(true);
+    table->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(table->m_material);
+
+    albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/bamboo-wood-albedo.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/bamboo-wood-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/bamboo-wood-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    table->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+    table->setUseTexture(true);
+
+    world->addChild(table);
+}
+
 void CreateBomb()
 {
     bomb = new cMultiMesh();
@@ -115,7 +175,7 @@ void CreateBomb()
     cMesh* mesh = bomb->getMesh(0);
 
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setBlueLightSteel();
+    mesh->m_material->setWhite();
     mesh->m_material->setUseHapticShading(true);
     bomb->setStiffness(2000.0, true);
 
@@ -187,7 +247,7 @@ void CreateTimer()
     cMesh* mesh = timer->getMesh(0);
 
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setGrayLightSlate();
+    mesh->m_material->setGrayGainsboro();
     mesh->m_material->setUseHapticShading(true);
     timer->setStiffness(2000.0, true);
 
@@ -201,7 +261,6 @@ void CreateTimer()
     {
         cMesh * mesh = new cMesh();
         cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
-        timer->addChild(mesh);
         mesh->createBruteForceCollisionDetector();
         mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
         mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
@@ -214,12 +273,12 @@ void CreateTimer()
 
     mesh = new cMesh();
     cCreatePlane(mesh, 0.00275, 0.015, cVector3d(0.0, 0.0, 0.005));
-    timer->addChild(mesh);
     mesh->createBruteForceCollisionDetector();
     mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
     mesh->m_texture = numberTextures[10];
     mesh->setUseTexture(true);
+    timer->addChild(mesh);
 
     cMesh * temp = timerNumbers[3];
     timerNumbers[3] = timerNumbers[2];
@@ -375,7 +434,7 @@ int main(int argc, char* argv[])
     world->addChild(light);
 
     light->setEnabled(true);
-    light->setLocalPos(0.7, 0.3, 1.0);
+    light->setLocalPos(0.7, 0.3, 1.5);
     light->setDir(-0.5,-0.2,-0.8);
     light->setShadowMapEnabled(true);
     light->m_shadowMap->setQualityHigh();
@@ -432,6 +491,7 @@ int main(int argc, char* argv[])
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
     
+    CreateEnvironment();
     CreateBomb();
     CreateNumberTextures();
     CreateTimer();
