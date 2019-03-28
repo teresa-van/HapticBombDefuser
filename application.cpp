@@ -104,6 +104,77 @@ void CreateNumberTextures()
     }
 }
 
+void CreateBomb()
+{
+    bomb = new cMultiMesh();
+
+    bomb->loadFromFile("models/bomb-rounded.obj");
+    bomb->createAABBCollisionDetector(toolRadius);
+    bomb->computeBTN();
+
+    cMesh* mesh = bomb->getMesh(0);
+
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setBlueLightSteel();
+    mesh->m_material->setUseHapticShading(true);
+    bomb->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/rust.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    mesh->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+
+    mesh->setUseTexture(true);
+
+    world->addChild(bomb);
+}
+
+// TEMPORARY PLACEMENT, in the future we want to pass in a file and position, maybe
+void CreatePanel()
+{
+    	// cMultiMesh* panel0 = new cMultiMesh();
+	// panel0->loadFromFile("models/tray.obj");
+	// panel0->createAABBCollisionDetector(toolRadius);
+	// panel0->computeBTN();
+	
+	// panel0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+
+	// cMesh* pMesh0 = panel0->getMesh(0);
+	// pMesh0->m_material = MyMaterial::create();
+	// pMesh0->m_material->setWhiteAzure();
+	// pMesh0->m_material->setUseHapticShading(true);
+	// panel0->setStiffness(2000.0, true);
+	// MyMaterialPtr pMat0 = std::dynamic_pointer_cast<MyMaterial>(pMesh0->m_material);
+	// pMesh0->m_texture = albedoMap;
+    // pMat0->m_height_map = heightMap;
+    // pMat0->m_roughness_map = roughnessMap;
+    // pMat0->hasTexture = true;
+
+    // pMesh0->setUseTexture(true);
+
+    // bomb->addChild(panel0);
+}
+
 void CreateTimer()
 {
     // Create timer object
@@ -116,7 +187,7 @@ void CreateTimer()
     cMesh* mesh = timer->getMesh(0);
 
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhiteAzure();
+    mesh->m_material->setGrayLightSlate();
     mesh->m_material->setUseHapticShading(true);
     timer->setStiffness(2000.0, true);
 
@@ -154,7 +225,10 @@ void CreateTimer()
     timerNumbers[3] = timerNumbers[2];
     timerNumbers[2] = temp;
 
-    world->addChild(timer);
+    timer->setLocalPos(0.005, 0.0, -0.011);
+    timer->scale(0.55);
+
+    bomb->addChild(timer);
 }
 
 void updateTimer()
@@ -308,73 +382,6 @@ int main(int argc, char* argv[])
     light->setCutOffAngleDeg(10);
 
     //--------------------------------------------------------------------------
-    // [CPSC.86] TEXTURED OBJECTS
-    //--------------------------------------------------------------------------
-
-    // bomb = new cMultiMesh();
-
-    // bomb->loadFromFile("models/bomb-rounded.obj");
-    // bomb->createAABBCollisionDetector(toolRadius);
-    // bomb->computeBTN();
-
-    // cMesh* mesh = bomb->getMesh(0);
-
-    // mesh->m_material = MyMaterial::create();
-    // mesh->m_material->setWhiteAzure();
-    // mesh->m_material->setUseHapticShading(true);
-    // bomb->setStiffness(2000.0, true);
-
-	// MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-
-    // cTexture2dPtr albedoMap = cTexture2d::create();
-    // albedoMap->loadFromFile("textures/rust.png");
-    // albedoMap->setWrapModeS(GL_REPEAT);
-    // albedoMap->setWrapModeT(GL_REPEAT);
-    // albedoMap->setUseMipmaps(true);
-
-    // cTexture2dPtr heightMap = cTexture2d::create();
-    // heightMap->loadFromFile("textures/rust-height.png");
-    // heightMap->setWrapModeS(GL_REPEAT);
-    // heightMap->setWrapModeT(GL_REPEAT);
-    // heightMap->setUseMipmaps(true);
-
-    // cTexture2dPtr roughnessMap = cTexture2d::create();
-    // roughnessMap->loadFromFile("textures/rust-roughness.png");
-    // roughnessMap->setWrapModeS(GL_REPEAT);
-    // roughnessMap->setWrapModeT(GL_REPEAT);
-    // roughnessMap->setUseMipmaps(true);
-
-    // mesh->m_texture = albedoMap;
-    // material->m_height_map = heightMap;
-    // material->m_roughness_map = roughnessMap;
-    // material->hasTexture = true;
-
-    // mesh->setUseTexture(true);
-
-	// cMultiMesh* panel0 = new cMultiMesh();
-	// panel0->loadFromFile("models/tray.obj");
-	// panel0->createAABBCollisionDetector(toolRadius);
-	// panel0->computeBTN();
-	
-	// panel0->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
-
-	// cMesh* pMesh0 = panel0->getMesh(0);
-	// pMesh0->m_material = MyMaterial::create();
-	// pMesh0->m_material->setWhiteAzure();
-	// pMesh0->m_material->setUseHapticShading(true);
-	// panel0->setStiffness(2000.0, true);
-	// MyMaterialPtr pMat0 = std::dynamic_pointer_cast<MyMaterial>(pMesh0->m_material);
-	// pMesh0->m_texture = albedoMap;
-    // pMat0->m_height_map = heightMap;
-    // pMat0->m_roughness_map = roughnessMap;
-    // pMat0->hasTexture = true;
-
-    // pMesh0->setUseTexture(true);
-
-    // bomb->addChild(panel0);
-    // world->addChild(bomb);
-	
-    //--------------------------------------------------------------------------
     // HAPTIC DEVICE
     //--------------------------------------------------------------------------
 
@@ -424,9 +431,11 @@ int main(int argc, char* argv[])
     //--------------------------------------------------------------------------
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
-
+    
+    CreateBomb();
     CreateNumberTextures();
     CreateTimer();
+    
     cPrecisionClock clock;
     startTime = clock.getCPUTimeSeconds();
 
