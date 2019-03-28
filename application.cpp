@@ -199,6 +199,7 @@ void CreateBomb()
     bomb->loadFromFile("models/bomb-rounded.obj");
     bomb->createAABBCollisionDetector(toolRadius);
     bomb->computeBTN();
+    bomb->setLocalPos(cVector3d(0.005, 0, 0));
 
     cMesh* mesh = bomb->getMesh(0);
 
@@ -274,13 +275,13 @@ void CreateTimer()
 
     cMesh* mesh = timer->getMesh(0);
 
-    // mesh->m_material = MyMaterial::create();
-    // mesh->m_material->setGrayGainsboro();
-    // mesh->m_material->setUseHapticShading(true);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhiteLinen();
+    mesh->m_material->setUseHapticShading(true);
     timer->setStiffness(2000.0, true);
 
-	// MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    // material->hasTexture = false;
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
 
     // Create timer number planes
     double spacing = 0.0058;
@@ -364,7 +365,7 @@ void UpdateTimeElapsed()
         timeLimit[3] -= 1;
     }
 
-    cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
+    // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
 int main(int argc, char* argv[])
