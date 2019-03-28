@@ -59,7 +59,12 @@ cVector3d cameraLookAt(0.0, 0.0, 0.0);
 double toolRadius = 0.0;
 
 cMultiMesh* bomb;
-int timeLimit[4] = {4,4,4,4}; // mm:ss
+cMesh * deathScreen;
+cMesh * background;
+cMesh * table;
+
+int timeLimit[4] = {1,0,1,0}; // mm:ss
+bool gameOver = false;
 
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
@@ -91,6 +96,13 @@ void updateGraphics(void);
 void updateHaptics(void);
 void close(void);
 
+void RemoveWorld()
+{
+    world->removeChild(bomb);
+    world->removeChild(table);
+    world->removeChild(background);
+}
+
 void CreateNumberTextures()
 {
     for (string s : numberTextureFiles)
@@ -104,9 +116,25 @@ void CreateNumberTextures()
     }
 }
 
+void CreateDeathScreen()
+{
+    deathScreen = new cMesh();
+    cCreatePlane(deathScreen, 0.15, 0.1, cVector3d(0, -0.001, 0.03));
+    deathScreen->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    deathScreen->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/deathscreen.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+    deathScreen->m_texture = albedoMap;
+    deathScreen->setUseTexture(true);
+}
+
 void CreateEnvironment()
 {
-    cMesh * background = new cMesh();
+    background = new cMesh();
     cCreatePlane(background, 0.25, 0.25, cVector3d(0, 0, -0.1));
     background->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     background->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
@@ -123,7 +151,7 @@ void CreateEnvironment()
 
     /////////////////////////////////////////////////////////////////////////////////
 
-    cMesh * table = new cMesh();
+    table = new cMesh();
     cCreatePlane(table, 0.12, 0.075, cVector3d(0, 0, -0.025));
     table->createBruteForceCollisionDetector();
     table->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
@@ -246,13 +274,13 @@ void CreateTimer()
 
     cMesh* mesh = timer->getMesh(0);
 
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setGrayGainsboro();
-    mesh->m_material->setUseHapticShading(true);
+    // mesh->m_material = MyMaterial::create();
+    // mesh->m_material->setGrayGainsboro();
+    // mesh->m_material->setUseHapticShading(true);
     timer->setStiffness(2000.0, true);
 
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
+	// MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    // material->hasTexture = false;
 
     // Create timer number planes
     double spacing = 0.0058;
@@ -260,22 +288,20 @@ void CreateTimer()
     for (int i = 0; i < 4; i++)
     {
         cMesh * mesh = new cMesh();
-        cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
-        mesh->createBruteForceCollisionDetector();
+        cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.0035));
         mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
         mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-
-        mesh->m_texture = numberTextures[timeLimit[i]];
+        mesh->scale(0.55);
         mesh->setUseTexture(true);
         timer->addChild(mesh);
         timerNumbers.push_back(mesh);
     }
 
     mesh = new cMesh();
-    cCreatePlane(mesh, 0.00275, 0.015, cVector3d(0.0, 0.0, 0.005));
-    mesh->createBruteForceCollisionDetector();
+    cCreatePlane(mesh, 0.00275, 0.015, cVector3d(0.0, 0.0, 0.0035));
     mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+    mesh->scale(0.55);
     mesh->m_texture = numberTextures[10];
     mesh->setUseTexture(true);
     timer->addChild(mesh);
@@ -285,13 +311,20 @@ void CreateTimer()
     timerNumbers[2] = temp;
 
     timer->setLocalPos(0.005, 0.0, -0.011);
-    timer->scale(0.55);
 
     bomb->addChild(timer);
 }
 
-void updateTimer()
+void UpdateTimer()
 {
+    if (timeLimit[0] < 0)
+    {
+        RemoveWorld();
+        world->addChild(deathScreen);
+        gameOver = true;
+        return;
+    }
+
     int i = 0;
     for (cMesh * m : timerNumbers)
     {
@@ -300,7 +333,7 @@ void updateTimer()
     }
 }
 
-void updateTimeElapsed()
+void UpdateTimeElapsed()
 {
     if (timeLimit[3] == 0)
     {
@@ -330,7 +363,8 @@ void updateTimeElapsed()
     {
         timeLimit[3] -= 1;
     }
-    // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
+
+    cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -495,6 +529,8 @@ int main(int argc, char* argv[])
     CreateBomb();
     CreateNumberTextures();
     CreateTimer();
+    UpdateTimer();
+    CreateDeathScreen();
     
     cPrecisionClock clock;
     startTime = clock.getCPUTimeSeconds();
@@ -503,14 +539,17 @@ int main(int argc, char* argv[])
 
     while (!glfwWindowShouldClose(window))
     {
-        double previousTime = clock.getCPUTimeSeconds();
-        double deltaTime = previousTime - startTime;
-        // cout << deltaTime << "\n";
-        if (deltaTime >= 1)
+        if (!gameOver)
         {
-            updateTimeElapsed();
-            updateTimer();
-            startTime = previousTime;
+            double previousTime = clock.getCPUTimeSeconds();
+            double deltaTime = previousTime - startTime;
+            // cout << deltaTime << "\n";
+            if (deltaTime >= 1)
+            {
+                UpdateTimeElapsed();
+                UpdateTimer();
+                startTime = previousTime;
+            }
         }
 
         glfwGetWindowSize(window, &width, &height);
@@ -696,12 +735,12 @@ void updateHaptics(void)
         }
         if (leftPressed)// && !left)
         {
-			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
 			leftPressed = false;
         }
         if (rightPressed)// && !right)
         {
-			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
 			rightPressed = false;
         }
 
@@ -729,7 +768,7 @@ void updateHaptics(void)
         // APPLY FORCES
         /////////////////////////////////////////////////////////////////////
 
-        updateWorkspace(position);
+        // updateWorkspace(position);
 
         freqCounterHaptics.signal(1);
     }
