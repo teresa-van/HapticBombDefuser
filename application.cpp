@@ -66,6 +66,8 @@ cMesh * table;
 int timeLimit[4] = {1,0,1,0}; // mm:ss
 bool gameOver = false;
 
+
+
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
 {
@@ -84,6 +86,19 @@ const string numberTextureFiles[11] =
 
 vector<cMesh*> timerNumbers;
 double startTime;
+
+
+int brailleOrder[4] = {0, 1, 2, 3};
+vector<cTexture2dPtr> brailleTextures;
+vector<cTexture2dPtr> brailleHeights;
+const string brailleTextureFiles[4] = 
+{
+	"brailleG.png",
+	"brailleR.png",
+	"brailleW.png",
+	"brailleY.png"
+};
+vector<cMesh*> brailleLetters;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -114,6 +129,19 @@ void CreateNumberTextures()
         tex->setUseMipmaps(true);
         numberTextures.push_back(tex);
     }
+}
+
+void CreateBrailleTextures() {
+    for (string s : brailleTextureFiles)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + s);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        brailleHeights.push_back(tex);
+    }
+
 }
 
 void CreateDeathScreen()
@@ -257,6 +285,110 @@ void CreatePanels()
     panel->setLocalPos(cVector3d(0.006, 0, 0.0095));
 
     bomb->addChild(panel);
+}
+
+void CreateBraillePuzzle()
+{
+	cMultiMesh * timer = new cMultiMesh();
+    timer->loadFromFile("models/timer.obj");
+    timer->createAABBCollisionDetector(toolRadius);
+    timer->computeBTN();
+
+    cMesh* mesh = timer->getMesh(0);
+
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhiteLinen();
+    mesh->m_material->setUseHapticShading(true);
+    timer->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+        cTexture2dPtr btex = cTexture2d::create();
+        btex->loadFromFile("textures/brailleEmpty.png");
+        btex->setWrapModeS(GL_REPEAT);
+        btex->setWrapModeT(GL_REPEAT);
+        btex->setUseMipmaps(true);
+
+    // Create timer number planes
+    double spacing = 0.0058;
+    double posX = -0.01;
+    for (int i = 0; i < 4; i++)
+    {
+		/*
+        cMesh * mesh = new cMesh();
+        mesh->m_material = MyMaterial::create();
+        cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
+            mesh->m_material->setWhiteLinen();
+//	    mesh->createBruteForceCollisionDetector();
+        mesh->createAABBCollisionDetector(toolRadius);
+		mesh->computeBTN();
+        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+        mesh->scale(0.55);
+        
+		mesh->m_material->setWhite();
+		mesh->m_material->setUseHapticShading(true);
+        mesh->setStiffness(2000.0, true);
+//        mesh->m_texture = btex;
+        mesh->m_texture = brailleHeights[i];
+        MyMaterialPtr mat = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+        mat->m_height_map = brailleHeights[i];
+        mat->hasTexture = true;
+        mesh->setUseTexture(true);
+        */
+        
+		cMesh * mesh = new cMesh();
+		cCreatePlane(mesh, spacing, 0.015, cVector3d(posX + i*spacing, 0.0, 0.0038));
+			mesh->createBruteForceCollisionDetector();
+	//           mesh->createAABBCollisionDetector(toolRadius);
+			mesh->computeBTN();
+
+			mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+			mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+			mesh->scale(.55);
+			mesh->setUseTransparency(true, true);
+		
+		mesh->m_material = MyMaterial::create();
+		mesh->m_material->setWhite();
+		mesh->m_material->setUseHapticShading(true);
+		mesh->setStiffness(2000.0, true);
+		mesh->setFriction(0, 0);
+
+		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+
+		cTexture2dPtr albedoMap = cTexture2d::create();
+	//    albedoMap->loadFromFile("textures/"+brailleTextureFiles[i]); //uncomment to see braille
+		albedoMap->loadFromFile("textures/brailleEmpty.png");
+		albedoMap->setWrapModeS(GL_REPEAT);
+		albedoMap->setWrapModeT(GL_REPEAT);
+		albedoMap->setUseMipmaps(true);
+
+		cTexture2dPtr heightMap = cTexture2d::create();
+		heightMap->loadFromFile("textures/"+brailleTextureFiles[i]);
+		heightMap->setWrapModeS(GL_REPEAT);
+		heightMap->setWrapModeT(GL_REPEAT);
+		heightMap->setUseMipmaps(true);
+
+		cTexture2dPtr roughnessMap = cTexture2d::create();
+		roughnessMap->loadFromFile("textures/brailleEmpty.png");
+		roughnessMap->setWrapModeS(GL_REPEAT);
+		roughnessMap->setWrapModeT(GL_REPEAT);
+		roughnessMap->setUseMipmaps(true);
+
+		mesh->m_texture = albedoMap;
+		material->m_height_map = heightMap;
+		material->m_roughness_map = roughnessMap;
+		material->hasTexture = true;
+
+		mesh->setUseTexture(true);
+        timer->addChild(mesh);
+        brailleLetters.push_back(mesh);
+    }
+
+    timer->setLocalPos(0.005, 0.019, -0.011);
+
+    bomb->addChild(timer);
 }
 
 void CreateBrailleLegend()
@@ -533,7 +665,7 @@ int main(int argc, char* argv[])
     tool->m_hapticPoint->m_algorithmFingerProxy = proxyAlgorithm;
     tool->m_hapticPoint->m_sphereProxy->m_material->setWhite();
     
-    tool->setRadius(0.001, toolRadius);
+    tool->setRadius(0.0005, toolRadius);
     tool->setHapticDevice(hapticDevice);
     tool->setWaitForSmallForce(true);
     tool->start();
@@ -573,7 +705,11 @@ int main(int argc, char* argv[])
     CreateTimer();
     UpdateTimer();
 
+	CreateBrailleTextures();
+	CreateBraillePuzzle();  
+
     CreatePanels();
+
     CreateBrailleLegend();
     CreateDeathScreen();
     
