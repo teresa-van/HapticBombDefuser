@@ -163,6 +163,17 @@ void RemoveWorld()
     world->removeChild(background);
 }
 
+void GameOver(bool win)
+{
+    cout << win << "\n";
+    RemoveWorld();
+    gameOver = true;
+    if (win)
+        world->addChild(winScreen);
+    else
+        world->addChild(deathScreen);
+}
+
 void CreateBrailleOrder() {
 	srand((unsigned)time(0));
 	int randomInteger;
@@ -228,7 +239,7 @@ void CreateEndGameScreens()
     deathScreen->setUseTexture(true);
 
     winScreen = new cMesh();
-    cCreatePlane(winScreen, 0.1, 0.06, cVector3d(0, -0.001, 0.03));
+    cCreatePlane(winScreen, 0.11, 0.06, cVector3d(0, -0.001, 0.03));
     winScreen->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     winScreen->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 
@@ -239,7 +250,6 @@ void CreateEndGameScreens()
     albedoMap->setUseMipmaps(true);
     winScreen->m_texture = albedoMap;
     winScreen->setUseTexture(true);
-    world->addChild(winScreen);
 }
 
 void CreateEnvironment()
@@ -648,10 +658,7 @@ void UpdateTimer()
 {
     if (timeLimit[0] < 0)
     {
-        RemoveWorld();
-        world->addChild(deathScreen);
-        gameOver = true;
-        return;
+        GameOver(false);
     }
 
     int i = 0;
@@ -1114,12 +1121,11 @@ void updateHaptics(void)
                 parent->addChild(cutWires[wireID]);
                 if (wireID == brailleOrder[wireSequence])
 					wireSequence++;
-				else {
-					timeLimit[0] = -1;
-					timeLimit[1] = 9;
-					timeLimit[2] = 5;
-					timeLimit[3] = 9;
-				}
+				else
+                    GameOver(false);
+
+                if (wireSequence >= 4)
+                    GameOver(true);
 			}
 			midPressed = false;
 //			middle = false;
