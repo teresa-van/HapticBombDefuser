@@ -56,16 +56,18 @@ int texIndex = -1;
 cVector3d workspaceOffset(0.0, 0.0, 0.0);
 cVector3d cameraLookAt(0.0, 0.0, 0.0);
 
-double toolRadius = 0.0;
+double toolRadius = 0.0005;
 
 cMultiMesh* bomb;
 cMesh * deathScreen;
 cMesh * background;
 cMesh * table;
-
-int timeLimit[4] = {1,0,1,0}; // mm:ss
+vector<cMultiMesh*> panels;
 bool gameOver = false;
 
+///////////////////////////////////////////////////
+
+int timeLimit[4] = {1,0,1,0}; // mm:ss
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
 {
@@ -85,6 +87,7 @@ const string numberTextureFiles[11] =
 vector<cMesh*> timerNumbers;
 double startTime;
 
+///////////////////////////////////////////////////
 
 int brailleOrder[4] = {0, 1, 2, 3};
 vector<cTexture2dPtr> brailleTextures;
@@ -98,7 +101,28 @@ const string brailleTextureFiles[4] =
 };
 vector<cMesh*> brailleLetters;
 
-vector<cMultiMesh*> panels;
+///////////////////////////////////////////////////
+
+vector<cMultiMesh*> wires;
+const string wireModels[4] = 
+{
+    "wire1.obj",
+    "wire2.obj",
+    "wire3.obj",
+    "wire4.obj",
+};
+
+cColorf color1;
+cColorf color2;
+cColorf color3;
+cColorf color4;
+vector<cColorf> wireColors = 
+{
+    color1,
+    color2,
+    color3,
+    color4,
+};
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -110,6 +134,14 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
 void updateGraphics(void);
 void updateHaptics(void);
 void close(void);
+
+void SetColors()
+{
+    wireColors[0].setRed();
+    wireColors[1].setYellow();
+    wireColors[2].setGreen();
+    wireColors[3].setWhite();
+}
 
 void RemoveWorld()
 {
@@ -268,81 +300,50 @@ void CreateBomb()
 
 void CreateWires()
 {
-    cMultiMesh* wire = new cMultiMesh();
-    wire->loadFromFile("models/wire1.obj");
-    wire->createAABBCollisionDetector(toolRadius);
-    wire->computeBTN();
+    cMultiMesh* base = new cMultiMesh();
+    base->loadFromFile("models/wirebase.obj");
+    base->createAABBCollisionDetector(toolRadius);
+    base->computeBTN();
 
-    cMesh* mesh = wire->getMesh(0);
+    cMesh* mesh = base->getMesh(0);
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setRed();
+    mesh->m_material->setColorf(0.2, 0.2, 0.2);
     mesh->m_material->setUseHapticShading(true);
-    wire->setStiffness(2000.0, true);
+    base->setStiffness(2000.0, true);
 
     MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
 
-    wire->setLocalPos(cVector3d(0.001, 0, 0.004));
-    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+    base->setLocalPos(cVector3d(0.0005, 0.001, 0.0005));
+    base->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+    panels[0]->addChild(base);
 
-    panels[0]->addChild(wire);
+    double posX = -0.0035;
+    double posY = 0.0005;
+    double posZ = 0.0025;
+    double spacing = 0.003;
+    double offsetY = 0.0001;
+    for (int i = 0; i < 4; i++)
+    {
+        cMultiMesh* wire = new cMultiMesh();
+        wire->loadFromFile("models/" + wireModels[i]);
+        wire->createAABBCollisionDetector(toolRadius);
+        wire->computeBTN();
 
-    wire = new cMultiMesh();
-    wire->loadFromFile("models/wire2.obj");
-    wire->createAABBCollisionDetector(toolRadius);
-    wire->computeBTN();
+        cMesh* mesh = wire->getMesh(0);
+        mesh->m_material = MyMaterial::create();
+        mesh->m_material->setColor(wireColors[i]);
+        mesh->m_material->setUseHapticShading(true);
+        wire->setStiffness(2000.0, true);
 
-    mesh = wire->getMesh(0);
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setYellow();
-    mesh->m_material->setUseHapticShading(true);
-    wire->setStiffness(2000.0, true);
+        MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+        material->hasTexture = false;
 
-    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
+        wire->setLocalPos(cVector3d(posZ, posX + (i*spacing), posY - (i*offsetY)));
+        wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 
-    wire->setLocalPos(cVector3d(0.001, 0, 0.002));
-    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
-
-    panels[0]->addChild(wire);
-
-    wire = new cMultiMesh();
-    wire->loadFromFile("models/wire3.obj");
-    wire->createAABBCollisionDetector(toolRadius);
-    wire->computeBTN();
-
-    mesh = wire->getMesh(0);
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhite();
-    mesh->m_material->setUseHapticShading(true);
-    wire->setStiffness(2000.0, true);
-
-    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
-
-    wire->setLocalPos(cVector3d(0.001, 0, -0.002));
-    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
-
-    panels[0]->addChild(wire);
-
-    wire = new cMultiMesh();
-    wire->loadFromFile("models/wire4.obj");
-    wire->createAABBCollisionDetector(toolRadius);
-    wire->computeBTN();
-
-    mesh = wire->getMesh(0);
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setGreen();
-    mesh->m_material->setUseHapticShading(true);
-    wire->setStiffness(2000.0, true);
-
-    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
-
-    wire->setLocalPos(cVector3d(0.001, 0, -0.004));
-    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
-
-    panels[0]->addChild(wire);
+        panels[0]->addChild(wire);
+    }
 }
 
 // right pos : 0.019
@@ -417,7 +418,7 @@ void CreateBraillePuzzle()
 
     // Create timer number planes
     double spacing = 0.0058;
-    double posX = -0.01;
+    double posX = -0.0085;
     for (int i = 0; i < 4; i++)
     {
 		/*
@@ -798,6 +799,7 @@ int main(int argc, char* argv[])
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
     
+    SetColors();
     CreateEnvironment();
     CreateBomb();
     CreatePanels();
@@ -874,10 +876,10 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     // if (a_action != GLFW_PRESS || a_action != GLFW_REPEAT)
     //     return;
 
-    if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q))
+    if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q) && a_action == GLFW_PRESS)  
         glfwSetWindowShouldClose(a_window, GLFW_TRUE);
 
-    else if (a_key == GLFW_KEY_F)
+    else if (a_key == GLFW_KEY_F && a_action == GLFW_PRESS)
     {
         fullscreen = !fullscreen;
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -898,7 +900,7 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
             glfwSwapInterval(swapInterval);
         }
     }
-    else if (a_key == GLFW_KEY_M)
+    else if (a_key == GLFW_KEY_M && a_action == GLFW_PRESS)
     {
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay);
