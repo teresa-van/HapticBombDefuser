@@ -417,7 +417,7 @@ void CreateBraillePuzzle()
 
     // Create timer number planes
     double spacing = 0.0058;
-    double posX = -0.01;
+    double posX = -0.009;
     for (int i = 0; i < 4; i++)
     {
 		/*
@@ -444,7 +444,7 @@ void CreateBraillePuzzle()
         */
         
 		cMesh * mesh = new cMesh();
-		cCreatePlane(mesh, spacing, 0.015, cVector3d(posX + i*spacing, 0.0, 0.0015));
+		cCreatePlane(mesh, 0.006, 0.015, cVector3d(posX + i*spacing, 0.0, 0.00124));
         mesh->createBruteForceCollisionDetector();
         mesh->computeBTN();
 
@@ -475,7 +475,7 @@ void CreateBraillePuzzle()
 		heightMap->setUseMipmaps(true);
 
 		cTexture2dPtr roughnessMap = cTexture2d::create();
-		roughnessMap->loadFromFile("textures/brailleEmpty.png");
+		roughnessMap->loadFromFile("textures/brailleRoughness.png");
 		roughnessMap->setWrapModeS(GL_REPEAT);
 		roughnessMap->setWrapModeT(GL_REPEAT);
 		roughnessMap->setUseMipmaps(true);
@@ -871,8 +871,8 @@ void errorCallback(int a_error, const char* a_description)
 
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
-    // if (a_action != GLFW_PRESS || a_action != GLFW_REPEAT)
-    //     return;
+    if (a_action != GLFW_PRESS)
+        return;
 
     if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q))
         glfwSetWindowShouldClose(a_window, GLFW_TRUE);

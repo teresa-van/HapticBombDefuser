@@ -115,8 +115,8 @@ void MyProxyAlgorithm::updateForce()
             roughnessMap->getPixelColor(x, y, roughnessPixelColor);
 
             // double normal = normalPixelColor.getR();// - 0.5;
-            double height = heightPixelColor.getR()/4;// - 0.5;
-            double roughness = roughnessPixelColor.getR()*0;// - 0.5;
+            double height = heightPixelColor.getR();// - 0.5;
+            double roughness = roughnessPixelColor.getR();// - 0.5;
 
             // std::cout << height << " <- height\n" << roughness << " <- roughness\n\n";
 
