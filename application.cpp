@@ -175,9 +175,10 @@ void CreateBrailleOrder() {
 	for (int i=0; i<4; i++)
 		brailleOrder[i] = tempOrder[i];
 
-//	for (int i=0; i<tempOrder.size(); i++) {
-//		std::cout << tempOrder[i] <<std::endl;
-//	}
+	for (int i=0; i<tempOrder.size(); i++) {
+		std::cout << tempOrder[i];// <<std::endl;
+	}
+	std::cout<<std::endl;
 	
 }
 
@@ -1083,9 +1084,8 @@ void updateHaptics(void)
 
         if (midPressed && !middle)
         {
-			std::cout << "Dfd" << std::endl;
 			if (wireID >=0 && wireID <4) {// && !middle) {
-				std::cout << "cut wire: " << wireID << std::endl;
+//				std::cout << "cut wire: " << wireID << std::endl;
 				cGenericObject * parent = wires[wireID]->getParent();
 				parent->removeChild(wires[wireID]);
 			}
