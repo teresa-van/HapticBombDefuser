@@ -30,6 +30,7 @@ bool mirroredDisplay = false;
 cWorld* world;
 cCamera* camera;
 cSpotLight* light;
+cSpotLight* backlight;
 cHapticDeviceHandler* handler;
 cGenericHapticDevicePtr hapticDevice;
 
@@ -110,6 +111,14 @@ const string wireModels[4] =
     "wire2.obj",
     "wire3.obj",
     "wire4.obj",
+};
+
+const string cutWireModels[4] = 
+{
+    "cutwire1.obj",
+    "cutwire2.obj",
+    "cutwire3.obj",
+    "cutwire4.obj",
 };
 
 cColorf color1;
@@ -217,12 +226,12 @@ void CreateDeathScreen()
 void CreateEnvironment()
 {
     background = new cMesh();
-    cCreatePlane(background, 0.25, 0.25, cVector3d(0, 0, -0.1));
+    cCreatePlane(background, 0.22, 0.165, cVector3d(0, 0, -0.045));
     background->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     background->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/background.jpg");
+    albedoMap->loadFromFile("textures/background.png");
     albedoMap->setWrapModeS(GL_REPEAT);
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
@@ -231,7 +240,7 @@ void CreateEnvironment()
 
     world->addChild(background);
 
-    /////////////////////////////////////////////////////////////////////////////////
+   //////////////////////////////////
 
     table = new cMesh();
     cCreatePlane(table, 0.12, 0.075, cVector3d(0, 0, -0.025));
@@ -348,7 +357,7 @@ void CreateWires()
     for (int i = 0; i < 4; i++)
     {
         cMultiMesh* wire = new cMultiMesh();
-        wire->loadFromFile("models/" + wireModels[i]);
+        wire->loadFromFile("models/" + cutWireModels[i]);
         wire->createAABBCollisionDetector(toolRadius);
         wire->computeBTN();
 
@@ -760,15 +769,32 @@ int main(int argc, char* argv[])
     camera->setStereoFocalLength(0.5);
     camera->setMirrorVertical(mirroredDisplay);
 
+   ///////////////////////////////////////////////////
+
     light = new cSpotLight(world);
     world->addChild(light);
 
     light->setEnabled(true);
-    light->setLocalPos(0.7, 0.3, 1.5);
-    light->setDir(-0.5,-0.2,-0.8);
+    // light->setLocalPos(0.7, 0.3, 1.5);
+    // light->setDir(-0.5, -0.2, -0.8);
+
+    light->setLocalPos(0.7, 0.3, 1.0);
+    light->setDir(-0.5, -0.2, -0.8);
     light->setShadowMapEnabled(true);
     light->m_shadowMap->setQualityHigh();
     light->setCutOffAngleDeg(10);
+
+   ///////////////////////////////////////////////////
+
+    // backlight = new cSpotLight(world);
+    // world->addChild(backlight);
+
+    // backlight->setEnabled(true);
+    // backlight->setLocalPos(0.4, 0.3, 1.6);
+    // backlight->setDir(-0.7, -0.2, -1.0);
+    // backlight->setShadowMapEnabled(true);
+    // backlight->m_shadowMap->setQualityHigh();
+    // backlight->setCutOffAngleDeg(20);
 
     //--------------------------------------------------------------------------
     // HAPTIC DEVICE
@@ -781,6 +807,8 @@ int main(int argc, char* argv[])
 
     tool = new cToolCursor(world);
     world->addChild(tool);
+
+   //
 
     // [CPSC.86] replace the tool's proxy rendering algorithm with our own
     proxyAlgorithm = new MyProxyAlgorithm;
@@ -808,6 +836,7 @@ int main(int argc, char* argv[])
     camera->m_frontLayer->addChild(labelDebug);
 
     camera->setWireMode(true);
+
     //--------------------------------------------------------------------------
     // START SIMULATION
     //--------------------------------------------------------------------------
@@ -821,25 +850,29 @@ int main(int argc, char* argv[])
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
     
+
+    // Initial setup
     SetColors();
     CreateEnvironment();
     CreateBomb();
     CreatePanels();
     CreateWires();
-    
+
+    // Timer
     CreateNumberTextures();
     CreateTimer();
     UpdateTimer();
 
+    // Braille puzzle
 	CreateBrailleOrder();
-
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
-
-
     CreateBrailleLegend();
+
+    // End game
     CreateDeathScreen();
 
+    // After setup
     SetPanelPositions();
     
     cPrecisionClock clock;
@@ -958,9 +991,9 @@ void close(void)
 
 void updateGraphics(void)
 {
-    /////////////////////////////////////////////////////////////////////
+   //////////////////////
     // UPDATE WIDGETS
-    /////////////////////////////////////////////////////////////////////
+   //////////////////////
 
     labelRates->setText(cStr(freqCounterGraphics.getFrequency(), 0) + " Hz / " +
         cStr(freqCounterHaptics.getFrequency(), 0) + " Hz");
@@ -977,9 +1010,9 @@ void updateGraphics(void)
     labelDebug->setLocalPos((int)(0.5 * (width - labelDebug->getWidth())), 40);
 
 
-    /////////////////////////////////////////////////////////////////////
+   //////////////////////
     // RENDER SCENE
-    /////////////////////////////////////////////////////////////////////
+   //////////////////////
     world->updateShadowMaps(false, mirroredDisplay);
     camera->renderView(width, height);
 
@@ -1025,9 +1058,9 @@ void updateHaptics(void)
 
     while(simulationRunning)
     {
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
         // READ HAPTIC DEVICE
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
 
         cVector3d position;
         hapticDevice->getPosition(position);
@@ -1064,15 +1097,15 @@ void updateHaptics(void)
 
         world->computeGlobalPositions();
 
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
         // UPDATE 3D CURSOR MODEL
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
 
         tool->updateFromDevice();
 
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
         // COMPUTE FORCES
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
 
         tool->computeInteractionForces();
 
@@ -1082,9 +1115,9 @@ void updateHaptics(void)
 
         tool->applyToDevice();
 
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
         // APPLY FORCES
-        /////////////////////////////////////////////////////////////////////
+       //////////////////////
 
         // updateWorkspace(position);
 
