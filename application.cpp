@@ -66,8 +66,6 @@ cMesh * table;
 int timeLimit[4] = {1,0,1,0}; // mm:ss
 bool gameOver = false;
 
-
-
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
 {
@@ -99,6 +97,8 @@ const string brailleTextureFiles[4] =
 	"brailleY.png"
 };
 vector<cMesh*> brailleLetters;
+
+vector<cMultiMesh*> panels;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -266,49 +266,154 @@ void CreateBomb()
     world->addChild(bomb);
 }
 
-void CreatePanels()
+void CreateWires()
 {
-    cMultiMesh* panel = new cMultiMesh();
-	panel->loadFromFile("models/basepanel.obj");
-	panel->createAABBCollisionDetector(toolRadius);
-	panel->computeBTN();
+    cMultiMesh* wire = new cMultiMesh();
+    wire->loadFromFile("models/wire1.obj");
+    wire->createAABBCollisionDetector(toolRadius);
+    wire->computeBTN();
 
-	cMesh* mesh = panel->getMesh(0);
-	mesh->m_material = MyMaterial::create();
-	mesh->m_material->setWhiteAzure();
-	mesh->m_material->setUseHapticShading(true);
-	panel->setStiffness(2000.0, true);
+    cMesh* mesh = wire->getMesh(0);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setRed();
+    mesh->m_material->setUseHapticShading(true);
+    wire->setStiffness(2000.0, true);
 
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
 
-    panel->setLocalPos(cVector3d(0.006, 0, 0.0095));
+    wire->setLocalPos(cVector3d(0.001, 0, 0.004));
+    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 
-    bomb->addChild(panel);
+    panels[0]->addChild(wire);
+
+    wire = new cMultiMesh();
+    wire->loadFromFile("models/wire2.obj");
+    wire->createAABBCollisionDetector(toolRadius);
+    wire->computeBTN();
+
+    mesh = wire->getMesh(0);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setYellow();
+    mesh->m_material->setUseHapticShading(true);
+    wire->setStiffness(2000.0, true);
+
+    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+    wire->setLocalPos(cVector3d(0.001, 0, 0.002));
+    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+
+    panels[0]->addChild(wire);
+
+    wire = new cMultiMesh();
+    wire->loadFromFile("models/wire3.obj");
+    wire->createAABBCollisionDetector(toolRadius);
+    wire->computeBTN();
+
+    mesh = wire->getMesh(0);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
+    wire->setStiffness(2000.0, true);
+
+    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+    wire->setLocalPos(cVector3d(0.001, 0, -0.002));
+    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+
+    panels[0]->addChild(wire);
+
+    wire = new cMultiMesh();
+    wire->loadFromFile("models/wire4.obj");
+    wire->createAABBCollisionDetector(toolRadius);
+    wire->computeBTN();
+
+    mesh = wire->getMesh(0);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setGreen();
+    mesh->m_material->setUseHapticShading(true);
+    wire->setStiffness(2000.0, true);
+
+    material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+    wire->setLocalPos(cVector3d(0.001, 0, -0.004));
+    wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+
+    panels[0]->addChild(wire);
+}
+
+// right pos : 0.019
+// left pos : - 0.019
+// top = 0.0095
+// bottom = -0.0095
+
+// front = 0.006
+// behind: 0.0125
+
+cVector3d panelPositions[11] = 
+{
+    cVector3d(0.006, -0.019, 0.0095),
+    cVector3d(0.006, 0.0, 0.0095),
+    cVector3d(0.006, 0.019, 0.0095),
+
+    cVector3d(0.006, -0.019, -0.0095),
+    cVector3d(0.006, 0.019, -0.0095),
+
+    cVector3d(-0.006, -0.019, 0.0095),
+    cVector3d(-0.006, 0.0, 0.0095),
+    cVector3d(-0.006, 0.019, 0.0095),
+
+    cVector3d(-0.006, -0.019, -0.0095),
+    cVector3d(-0.006, 0.0, -0.0095),
+    cVector3d(-0.006, 0.019, -0.0095),
+};
+
+void CreatePanels()
+{
+    for (int i = 0; i < 11; i++)
+    {
+        cMultiMesh* panel = new cMultiMesh();
+        panel->loadFromFile("models/basepanel.obj");
+        panel->createAABBCollisionDetector(toolRadius);
+        panel->computeBTN();
+
+        cMesh* mesh = panel->getMesh(0);
+        mesh->m_material = MyMaterial::create();
+        mesh->m_material->setWhiteLinen();
+        mesh->m_material->setUseHapticShading(true);
+        panel->setStiffness(2000.0, true);
+
+        MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+        material->hasTexture = false;
+
+        bomb->addChild(panel);
+        panels.push_back(panel);
+    }
+    
+}
+
+void SetPanelPositions()
+{
+    int i = 0;
+    for (cMultiMesh * panel : panels)
+    {
+        panel->setLocalPos(panelPositions[i]);
+        if (panel->getLocalPos().x() < 0)
+            panel->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(180));
+        i++;
+    }
 }
 
 void CreateBraillePuzzle()
 {
-	cMultiMesh * timer = new cMultiMesh();
-    timer->loadFromFile("models/timer.obj");
-    timer->createAABBCollisionDetector(toolRadius);
-    timer->computeBTN();
-
-    cMesh* mesh = timer->getMesh(0);
-
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhiteLinen();
-    mesh->m_material->setUseHapticShading(true);
-    timer->setStiffness(2000.0, true);
-
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
-
-        cTexture2dPtr btex = cTexture2d::create();
-        btex->loadFromFile("textures/brailleEmpty.png");
-        btex->setWrapModeS(GL_REPEAT);
-        btex->setWrapModeT(GL_REPEAT);
-        btex->setUseMipmaps(true);
+    cTexture2dPtr btex = cTexture2d::create();
+    btex->loadFromFile("textures/brailleEmpty.png");
+    btex->setWrapModeS(GL_REPEAT);
+    btex->setWrapModeT(GL_REPEAT);
+    btex->setUseMipmaps(true);
 
     // Create timer number planes
     double spacing = 0.0058;
@@ -319,7 +424,7 @@ void CreateBraillePuzzle()
         cMesh * mesh = new cMesh();
         mesh->m_material = MyMaterial::create();
         cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
-            mesh->m_material->setWhiteLinen();
+        mesh->m_material->setWhiteLinen();
 //	    mesh->createBruteForceCollisionDetector();
         mesh->createAABBCollisionDetector(toolRadius);
 		mesh->computeBTN();
@@ -339,15 +444,14 @@ void CreateBraillePuzzle()
         */
         
 		cMesh * mesh = new cMesh();
-		cCreatePlane(mesh, spacing, 0.015, cVector3d(posX + i*spacing, 0.0, 0.0038));
-			mesh->createBruteForceCollisionDetector();
-	//           mesh->createAABBCollisionDetector(toolRadius);
-			mesh->computeBTN();
+		cCreatePlane(mesh, spacing, 0.015, cVector3d(posX + i*spacing, 0.0, 0.0015));
+        mesh->createBruteForceCollisionDetector();
+        mesh->computeBTN();
 
-			mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
-			mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-			mesh->scale(.55);
-			mesh->setUseTransparency(true, true);
+        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+        mesh->scale(.55);
+        mesh->setUseTransparency(true, true);
 		
 		mesh->m_material = MyMaterial::create();
 		mesh->m_material->setWhite();
@@ -382,13 +486,9 @@ void CreateBraillePuzzle()
 		material->hasTexture = true;
 
 		mesh->setUseTexture(true);
-        timer->addChild(mesh);
+        panels[4]->addChild(mesh);
         brailleLetters.push_back(mesh);
     }
-
-    timer->setLocalPos(0.005, 0.019, -0.011);
-
-    bomb->addChild(timer);
 }
 
 void CreateBrailleLegend()
@@ -483,7 +583,7 @@ void CreateTimer()
     timerNumbers[3] = timerNumbers[2];
     timerNumbers[2] = temp;
 
-    timer->setLocalPos(0.005, 0.0, -0.011);
+    timer->setLocalPos(0.006, 0.0, -0.011);
 
     bomb->addChild(timer);
 }
@@ -700,6 +800,8 @@ int main(int argc, char* argv[])
     
     CreateEnvironment();
     CreateBomb();
+    CreatePanels();
+    CreateWires();
     
     CreateNumberTextures();
     CreateTimer();
@@ -708,10 +810,11 @@ int main(int argc, char* argv[])
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
 
-    CreatePanels();
 
     CreateBrailleLegend();
     CreateDeathScreen();
+
+    SetPanelPositions();
     
     cPrecisionClock clock;
     startTime = clock.getCPUTimeSeconds();
@@ -768,10 +871,10 @@ void errorCallback(int a_error, const char* a_description)
 
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
-    if (a_action != GLFW_PRESS)
-        return;
+    // if (a_action != GLFW_PRESS || a_action != GLFW_REPEAT)
+    //     return;
 
-    else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q))
+    if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q))
         glfwSetWindowShouldClose(a_window, GLFW_TRUE);
 
     else if (a_key == GLFW_KEY_F)
@@ -799,6 +902,14 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     {
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay);
+    }
+    else if (a_key == GLFW_KEY_RIGHT)
+    {
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), cDegToRad(180));
+    }
+    else if (a_key == GLFW_KEY_LEFT)
+    {
+			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), cDegToRad(180));
     }
 }
 
