@@ -91,7 +91,7 @@ double startTime;
 
 ///////////////////////////////////////////////////
 
-int brailleOrder[4] = {3, 1, 2, 0};
+int brailleOrder[4] = {3, 1, 2, 0}; // will be modified later on
 vector<cTexture2dPtr> brailleTextures;
 vector<cTexture2dPtr> brailleHeights;
 const string brailleTextureFiles[4] = 
@@ -115,6 +115,7 @@ const string wireModels[4] =
     "wire4.obj",
 };
 
+int wireSequence = 0;
 vector<cMultiMesh*> cutWires;
 const string cutWireModels[4] = 
 {
@@ -149,10 +150,10 @@ void close(void);
 
 void SetColors()
 {
-    wireColors[0].setRed();
-    wireColors[1].setYellow();
-    wireColors[2].setGreen();
-    wireColors[3].setWhite();
+    wireColors[0].setGreen();
+    wireColors[1].setRed();
+    wireColors[2].setWhite();
+    wireColors[3].setYellow();
 }
 
 void RemoveWorld()
@@ -177,11 +178,11 @@ void CreateBrailleOrder() {
 	for (int i=0; i<4; i++)
 		brailleOrder[i] = tempOrder[i];
 
-	for (int i=0; i<tempOrder.size(); i++) {
+/*	for (int i=0; i<tempOrder.size(); i++) {
 		std::cout << tempOrder[i];// <<std::endl;
 	}
 	std::cout<<std::endl;
-	
+	*/
 }
 
 void CreateNumberTextures()
@@ -417,7 +418,6 @@ void CreateCutWires()
 
         MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
         material->hasTexture = false;
-		material->id = i;
         wire->setLocalPos(cVector3d(posZ, posX + (i*spacing), posY - (i*offsetY)));
         wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 		cutWires.push_back(wire);
@@ -499,29 +499,6 @@ void CreateBraillePuzzle()
     double posX = -0.009;
     for (int i = 0; i < 4; i++)
     {
-		/*
-        cMesh * mesh = new cMesh();
-        mesh->m_material = MyMaterial::create();
-        cCreatePlane(mesh, spacing, 0.015, cVector3d((i<2) ? posX + i*spacing : -posX - (i-2)*spacing, 0.0, 0.005));
-        mesh->m_material->setWhiteLinen();
-//	    mesh->createBruteForceCollisionDetector();
-        mesh->createAABBCollisionDetector(toolRadius);
-		mesh->computeBTN();
-        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
-        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-        mesh->scale(0.55);
-        
-		mesh->m_material->setWhite();
-		mesh->m_material->setUseHapticShading(true);
-        mesh->setStiffness(2000.0, true);
-//        mesh->m_texture = btex;
-        mesh->m_texture = brailleHeights[i];
-        MyMaterialPtr mat = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-        mat->m_height_map = brailleHeights[i];
-        mat->hasTexture = true;
-        mesh->setUseTexture(true);
-        */
-        
 		cMesh * mesh = new cMesh();
 		cCreatePlane(mesh, 0.006, 0.015, cVector3d(posX + i*spacing, 0.0, 0.00124));
         mesh->createBruteForceCollisionDetector();
@@ -1135,6 +1112,14 @@ void updateHaptics(void)
 				cGenericObject * parent = wires[wireID]->getParent();
 				parent->removeChild(wires[wireID]);
                 parent->addChild(cutWires[wireID]);
+                if (wireID == brailleOrder[wireSequence])
+					wireSequence++;
+				else {
+					timeLimit[0] = -1;
+					timeLimit[1] = 9;
+					timeLimit[2] = 5;
+					timeLimit[3] = 9;
+				}
 			}
 			midPressed = false;
 //			middle = false;
