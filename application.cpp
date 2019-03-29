@@ -61,6 +61,7 @@ double toolRadius = 0.0005;
 
 cMultiMesh* bomb;
 cMesh * deathScreen;
+cMesh * winScreen;
 cMesh * background;
 cMesh * table;
 vector<cMultiMesh*> panels;
@@ -68,7 +69,7 @@ bool gameOver = false;
 
 ///////////////////////////////////////////////////
 
-int timeLimit[4] = {1,0,1,0}; // mm:ss
+int timeLimit[4] = {0,5,0,0}; // mm:ss
 vector<cTexture2dPtr> numberTextures;
 const string numberTextureFiles[11] = 
 {
@@ -210,7 +211,7 @@ void CreateBrailleTextures() {
 
 }
 
-void CreateDeathScreen()
+void CreateEndGameScreens()
 {
     deathScreen = new cMesh();
     cCreatePlane(deathScreen, 0.15, 0.1, cVector3d(0, -0.001, 0.03));
@@ -224,6 +225,20 @@ void CreateDeathScreen()
     albedoMap->setUseMipmaps(true);
     deathScreen->m_texture = albedoMap;
     deathScreen->setUseTexture(true);
+
+    winScreen = new cMesh();
+    cCreatePlane(winScreen, 0.1, 0.06, cVector3d(0, -0.001, 0.03));
+    winScreen->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    winScreen->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+    albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/winscreen.jpg");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+    winScreen->m_texture = albedoMap;
+    winScreen->setUseTexture(true);
+    world->addChild(winScreen);
 }
 
 void CreateEnvironment()
@@ -903,7 +918,7 @@ int main(int argc, char* argv[])
     CreateBrailleLegend();
 
     // End game
-    CreateDeathScreen();
+    CreateEndGameScreens();
 
     // After setup
     SetPanelPositions();
