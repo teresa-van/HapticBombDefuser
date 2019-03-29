@@ -114,6 +114,7 @@ const string wireModels[4] =
     "wire4.obj",
 };
 
+vector<cMultiMesh*> cutWires;
 const string cutWireModels[4] = 
 {
     "cutwire1.obj",
@@ -376,6 +377,35 @@ void CreateWires()
         panels[0]->addChild(wire);
     }
     wiresMade = true;
+}
+
+void CreateCutWires()
+{
+    double posX = -0.0035;
+    double posY = 0.0005;
+    double posZ = 0.0025;
+    double spacing = 0.003;
+    double offsetY = 0.0001;
+    for (int i = 0; i < 4; i++)
+    {
+        cMultiMesh* wire = new cMultiMesh();
+        wire->loadFromFile("models/" + cutWireModels[i]);
+        wire->createAABBCollisionDetector(toolRadius);
+        wire->computeBTN();
+
+        cMesh* mesh = wire->getMesh(0);
+        mesh->m_material = MyMaterial::create();
+        mesh->m_material->setColor(wireColors[i]);
+        mesh->m_material->setUseHapticShading(true);
+        wire->setStiffness(2000.0, true);
+
+        MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+        material->hasTexture = false;
+		material->id = i;
+        wire->setLocalPos(cVector3d(posZ, posX + (i*spacing), posY - (i*offsetY)));
+        wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
+		cutWires.push_back(wire);
+    }
 }
 
 // right pos : 0.019
@@ -858,6 +888,7 @@ int main(int argc, char* argv[])
     CreateBomb();
     CreatePanels();
     CreateWires();
+    CreateCutWires();
 
     // Timer
     CreateNumberTextures();
