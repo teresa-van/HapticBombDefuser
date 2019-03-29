@@ -48,6 +48,7 @@ using namespace chai3d;
         m_lastGlobalForce   - this is what the operator ultimately feels!!!
 */
 //==============================================================================
+extern int wireID;
 
 void MyProxyAlgorithm::updateForce()
 {
@@ -91,8 +92,12 @@ void MyProxyAlgorithm::updateForce()
 
         if (MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(c0->m_object->m_material))
         {
+			wireID = material->id;
             if (!material->hasTexture) return;
-            
+         
+			
+//			std::cout<< material->id << std::endl;
+
             cVector3d F = -material->getStiffness() * (m_deviceGlobalPos - m_proxyGlobalPos);
             double roughnessFactor = 5.0;
 
@@ -142,6 +147,8 @@ void MyProxyAlgorithm::updateForce()
             c0->m_object->setFriction(mu_s, mu_k);
         }
     }
+    else
+		wireID = -1;
 }
 
 

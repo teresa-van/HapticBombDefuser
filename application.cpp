@@ -103,7 +103,8 @@ const string brailleTextureFiles[4] =
 vector<cMesh*> brailleLetters;
 
 ///////////////////////////////////////////////////
-
+bool wiresMade = false;
+extern int wireID = -1;
 vector<cMultiMesh*> wires;
 const string wireModels[4] = 
 {
@@ -323,7 +324,6 @@ void CreateBomb()
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
-
     mesh->setUseTexture(true);
 
     world->addChild(bomb);
@@ -357,7 +357,7 @@ void CreateWires()
     for (int i = 0; i < 4; i++)
     {
         cMultiMesh* wire = new cMultiMesh();
-        wire->loadFromFile("models/" + cutWireModels[i]);
+        wire->loadFromFile("models/" + wireModels[i]);
         wire->createAABBCollisionDetector(toolRadius);
         wire->computeBTN();
 
@@ -369,12 +369,13 @@ void CreateWires()
 
         MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
         material->hasTexture = false;
-
+		material->id = i;
         wire->setLocalPos(cVector3d(posZ, posX + (i*spacing), posY - (i*offsetY)));
         wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
-
+		wires.push_back(wire);
         panels[0]->addChild(wire);
     }
+    wiresMade = true;
 }
 
 // right pos : 0.019
@@ -1080,9 +1081,17 @@ void updateHaptics(void)
         if (left) leftPressed = true;
         if (right) rightPressed = true;
 
-        if (midPressed)// && !middle)
+        if (midPressed && !middle)
         {
+			std::cout << "Dfd" << std::endl;
+			if (wireID >=0 && wireID <4) {// && !middle) {
+				std::cout << "cut wire: " << wireID << std::endl;
+				cGenericObject * parent = wires[wireID]->getParent();
+				parent->removeChild(wires[wireID]);
+			}
 			midPressed = false;
+//			middle = false;
+			
         }
         if (leftPressed)// && !left)
         {
@@ -1116,10 +1125,6 @@ void updateHaptics(void)
         tool->applyToDevice();
 
        //////////////////////
-        // APPLY FORCES
-       //////////////////////
-
-        // updateWorkspace(position);
 
         freqCounterHaptics.signal(1);
     }
