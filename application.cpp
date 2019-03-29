@@ -1119,6 +1119,7 @@ void updateHaptics(void)
 //				std::cout << "cut wire: " << wireID << std::endl;
 				cGenericObject * parent = wires[wireID]->getParent();
 				parent->removeChild(wires[wireID]);
+                parent->addChild(cutWires[wireID]);
 			}
 			midPressed = false;
 //			middle = false;
