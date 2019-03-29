@@ -86,7 +86,7 @@ vector<cMesh*> timerNumbers;
 double startTime;
 
 
-int brailleOrder[4] = {0, 1, 2, 3};
+int brailleOrder[4] = {3, 1, 2, 0};
 vector<cTexture2dPtr> brailleTextures;
 vector<cTexture2dPtr> brailleHeights;
 const string brailleTextureFiles[4] = 
@@ -118,6 +118,27 @@ void RemoveWorld()
     world->removeChild(background);
 }
 
+void CreateBrailleOrder() {
+	srand((unsigned)time(0));
+	int randomInteger;
+//	int lowest = 0;
+//	int highest = 3;
+//	int range = (highest - lowest);
+	vector<int> tempOrder;
+	while (tempOrder.size() < 4) {
+		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
+		if (randomInteger < 4 && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
+			tempOrder.push_back(randomInteger);
+	}
+	for (int i=0; i<4; i++)
+		brailleOrder[i] = tempOrder[i];
+
+//	for (int i=0; i<tempOrder.size(); i++) {
+//		std::cout << tempOrder[i] <<std::endl;
+//	}
+	
+}
+
 void CreateNumberTextures()
 {
     for (string s : numberTextureFiles)
@@ -132,10 +153,11 @@ void CreateNumberTextures()
 }
 
 void CreateBrailleTextures() {
-    for (string s : brailleTextureFiles)
+//    for (string s : brailleTextureFiles)
+    for (int i=0; i<4; i++)
     {
         cTexture2dPtr tex = cTexture2d::create();
-        tex->loadFromFile("textures/" + s);
+        tex->loadFromFile("textures/" + brailleTextureFiles[brailleOrder[i]]);
         tex->setWrapModeS(GL_REPEAT);
         tex->setWrapModeT(GL_REPEAT);
         tex->setUseMipmaps(true);
@@ -469,7 +491,7 @@ void CreateBraillePuzzle()
 		albedoMap->setUseMipmaps(true);
 
 		cTexture2dPtr heightMap = cTexture2d::create();
-		heightMap->loadFromFile("textures/"+brailleTextureFiles[i]);
+		heightMap->loadFromFile("textures/"+brailleTextureFiles[brailleOrder[i]]);
 		heightMap->setWrapModeS(GL_REPEAT);
 		heightMap->setWrapModeT(GL_REPEAT);
 		heightMap->setUseMipmaps(true);
@@ -806,6 +828,8 @@ int main(int argc, char* argv[])
     CreateNumberTextures();
     CreateTimer();
     UpdateTimer();
+
+	CreateBrailleOrder();
 
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
