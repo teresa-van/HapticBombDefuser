@@ -64,6 +64,7 @@ cMesh * deathScreen;
 cMesh * winScreen;
 cMesh * background;
 cMesh * table;
+cMesh * scratchSurface;
 vector<cMultiMesh*> panels;
 bool gameOver = false;
 
@@ -172,55 +173,6 @@ void GameOver(bool win)
         world->addChild(winScreen);
     else
         world->addChild(deathScreen);
-}
-
-void CreateBrailleOrder() {
-	srand((unsigned)time(0));
-	int randomInteger;
-//	int lowest = 0;
-//	int highest = 3;
-//	int range = (highest - lowest);
-	vector<int> tempOrder;
-	while (tempOrder.size() < 4) {
-		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
-		if (randomInteger < 4 && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
-			tempOrder.push_back(randomInteger);
-	}
-	for (int i=0; i<4; i++)
-		brailleOrder[i] = tempOrder[i];
-
-/*	for (int i=0; i<tempOrder.size(); i++) {
-		std::cout << tempOrder[i];// <<std::endl;
-	}
-	std::cout<<std::endl;
-	*/
-}
-
-void CreateNumberTextures()
-{
-    for (string s : numberTextureFiles)
-    {
-        cTexture2dPtr tex = cTexture2d::create();
-        tex->loadFromFile("textures/" + s);
-        tex->setWrapModeS(GL_REPEAT);
-        tex->setWrapModeT(GL_REPEAT);
-        tex->setUseMipmaps(true);
-        numberTextures.push_back(tex);
-    }
-}
-
-void CreateBrailleTextures() {
-//    for (string s : brailleTextureFiles)
-    for (int i=0; i<4; i++)
-    {
-        cTexture2dPtr tex = cTexture2d::create();
-        tex->loadFromFile("textures/" + brailleTextureFiles[brailleOrder[i]]);
-        tex->setWrapModeS(GL_REPEAT);
-        tex->setWrapModeT(GL_REPEAT);
-        tex->setUseMipmaps(true);
-        brailleHeights.push_back(tex);
-    }
-
 }
 
 void CreateEndGameScreens()
@@ -526,6 +478,57 @@ void SetPanelPositions()
     }
 }
 
+void CreateBrailleOrder() 
+{
+	srand((unsigned)time(0));
+	int randomInteger;
+//	int lowest = 0;
+//	int highest = 3;
+//	int range = (highest - lowest);
+	vector<int> tempOrder;
+	while (tempOrder.size() < 4) {
+		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
+		if (randomInteger < 4 && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
+			tempOrder.push_back(randomInteger);
+	}
+	for (int i=0; i<4; i++)
+		brailleOrder[i] = tempOrder[i];
+
+/*	for (int i=0; i<tempOrder.size(); i++) {
+		std::cout << tempOrder[i];// <<std::endl;
+	}
+	std::cout<<std::endl;
+	*/
+}
+
+void CreateNumberTextures()
+{
+    for (string s : numberTextureFiles)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + s);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        numberTextures.push_back(tex);
+    }
+}
+
+void CreateBrailleTextures() 
+{
+//    for (string s : brailleTextureFiles)
+    for (int i=0; i<4; i++)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + brailleTextureFiles[brailleOrder[i]]);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        brailleHeights.push_back(tex);
+    }
+
+}
+
 void CreateBraillePuzzle()
 {
     cTexture2dPtr btex = cTexture2d::create();
@@ -590,12 +593,13 @@ void CreateBraillePuzzle()
 void CreateBrailleLegend()
 {
 	cMesh * mesh = new cMesh();
-	cCreatePlane(mesh,0.01,0.01,cVector3d(0.0125,0.0065,0.005));
-	    mesh->createBruteForceCollisionDetector();
-        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
-        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-        mesh->scale(1.5);
-        mesh->setUseTransparency(true, true);
+	cCreatePlane(mesh, 0.01, 0.01, cVector3d(0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+
+    mesh->createBruteForceCollisionDetector();
+    mesh->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+    mesh->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+    mesh->scale(1.5);
+    mesh->setUseTransparency(true, true);
 	
     mesh->m_material = MyMaterial::create();
     mesh->m_material->setWhite();
@@ -629,8 +633,64 @@ void CreateBrailleLegend()
 
 	mesh->setUseTexture(true);
 	
-	bomb->addChild(mesh);
+	panels[7]->addChild(mesh);
 	
+}
+
+void CreateScratchAndWin()
+{
+    scratchSurface = new cMesh();
+    cCreatePlane(scratchSurface, 0.01, 0.01, cVector3d(0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+
+    scratchSurface->createBruteForceCollisionDetector();
+    scratchSurface->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+    scratchSurface->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+    scratchSurface->scale(1.5);
+    scratchSurface->setUseTransparency(true, true);
+
+    scratchSurface->m_material = MyMaterial::create();
+    scratchSurface->m_material->setWhite();
+    scratchSurface->m_material->setUseHapticShading(true);
+    scratchSurface->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(scratchSurface->m_material);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/bamboo-wood-albedo.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    scratchSurface->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+
+	scratchSurface->setUseTexture(true);
+
+    cNormalMapPtr normalMap = cNormalMap::create();
+    normalMap->createMap(scratchSurface->m_texture);
+    scratchSurface->m_normalMap = normalMap;
+
+    // set haptic properties
+    scratchSurface->m_material->setStaticFriction(0.30);
+    scratchSurface->m_material->setDynamicFriction(0.20);
+    scratchSurface->m_material->setHapticTriangleSides(true, false);
+    scratchSurface->m_material->setTextureLevel(1.5);
+	
+	panels[2]->addChild(scratchSurface);
 }
 
 void CreateTimer()
@@ -933,6 +993,9 @@ int main(int argc, char* argv[])
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
     CreateBrailleLegend();
+
+    // Scratch and Win
+    CreateScratchAndWin();
 
     // End game
     CreateEndGameScreens();
