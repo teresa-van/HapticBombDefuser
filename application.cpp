@@ -434,6 +434,36 @@ void CreateCutWires()
     }
 }
 
+void CreateWireCover()
+{
+    cMultiMesh* cover = new cMultiMesh();
+    cover->loadFromFile("models/wirecover.obj");
+    cover->createAABBCollisionDetector(toolRadius);
+    cover->computeBTN();
+
+    cMesh* mesh = cover->getMesh(0);
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
+    cover->setStiffness(2000.0, true);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/wirecover.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+    mesh->m_texture = albedoMap;
+    mesh->setUseTexture(true);
+    mesh->setUseTransparency(true);
+
+    MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+    material->hasTexture = false;
+
+    cover->setLocalPos(cVector3d(0.0025, 0.0001, -0.0005));
+    cover->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
+    panels[0]->addChild(cover);
+}
+
 // right pos : 0.019
 // left pos : - 0.019
 // top = 0.0095
@@ -887,8 +917,11 @@ int main(int argc, char* argv[])
     CreateEnvironment();
     CreateBomb();
     CreatePanels();
+
+    // Wires
     CreateWires();
     CreateCutWires();
+    CreateWireCover();
 
     // Timer
     CreateNumberTextures();
@@ -1133,11 +1166,21 @@ void updateHaptics(void)
         }
         if (leftPressed)// && !left)
         {
+            world->computeGlobalPositions();
+            tool->updateFromDevice();
+            tool->computeInteractionForces();
+            tool->applyToDevice();
+            
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
 			leftPressed = false;
         }
         if (rightPressed)// && !right)
         {
+            world->computeGlobalPositions();
+            tool->updateFromDevice();
+            tool->computeInteractionForces();
+            tool->applyToDevice();
+
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
 			rightPressed = false;
         }
