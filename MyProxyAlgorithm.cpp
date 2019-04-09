@@ -100,23 +100,19 @@ void MyProxyAlgorithm::updateForce()
             double roughnessFactor = 5.0;
 //				contactForce = cVector3d(0,0,0);
 //            if (material->id == 7 ||material->id == 8 || contactForce.length()>0)
-            if (material->id > 6)//  || contactForce.length()>0)
+            if (material->id > 6 && material->id < 12)//  || contactForce.length()>0)
 //				contactForce = (m_deviceGlobalPos - m_proxyGlobalPos);
 				contactForce = F;
 //			else
 //				contactForce = cVector3d(0,0,0);
-            if (!material->hasTexture) {
-//				m_lastGlobalForce = -returnForce;
-//				m_lastGlobalForce = cVector3d(0,0,0);
-//				wireID = -1;
-//contactForce = cVector3d(0,0,0);
+            if (!material->hasTexture) 
 				return;
-			}
-         
 			
 //			std::cout<< material->id << std::endl;
 
-            
+
+            // CALCULATE TEXTURE FORCED (FRICTION, BUMPS)
+            ////////////////////////////////////////////////////////////////////////////////////////
             // cImagePtr normalMap = material->m_normal_map->m_image;
             cImagePtr heightMap = material->m_height_map->m_image;
             cImagePtr roughnessMap = material->m_roughness_map->m_image;
@@ -146,14 +142,8 @@ void MyProxyAlgorithm::updateForce()
 
             cVector3d force = F.length() * perturbedNormal;
 
-            cVector3d toolForce = cVector3d(0.0, 0.0, 0.0);
-            double toolRoughness = 0;
-
             // Add the force calculated for the ray (force) and the tool (toolForce) together and apply it to the device
-            m_lastGlobalForce = toolForce + force;
-
-            // Add the tray roughness (roughness) and tool roughness (toolRoughness) together
-            roughness += toolRoughness;
+            m_lastGlobalForce = force;
 
             roughness *= roughnessFactor;
 
@@ -161,10 +151,72 @@ void MyProxyAlgorithm::updateForce()
             double mu_s = 1.0 * roughness;
 
             c0->m_object->setFriction(mu_s, mu_k);
+
+            // SCRATCH AND WIN
+            ////////////////////////////////////////////////////////////////////////////////////////
+            if (material->id == 12)
+            {   
+                cTexture1dPtr texture = c0->m_object->m_texture;
+                cTexture1dPtr roughnessMap = material->m_roughness_map;
+                cTexture1dPtr heightMap = material->m_height_map;
+
+                // retrieve contact information
+                cVector3d localPos = c0->m_localPos;
+                unsigned int triangleIndex = c0->m_index;
+                cTriangleArrayPtr triangles = c0->m_triangles;
+
+                // retrieve texture coordinate
+                cVector3d texCoord = triangles->getTexCoordAtPosition(triangleIndex, localPos);
+
+                // retrieve pixel information
+                int px, py;
+                texture->m_image->getPixelLocation(texCoord, px, py);
+
+                // paint color at tool position
+                const double K_INK = 30;
+                const double K_SIZE = 10;
+                const int BRUSH_SIZE = 25;
+                // double timeInterval = 1.0/100.0;
+
+                double size = cClamp(K_SIZE * force.length(), 1.0, (double)(BRUSH_SIZE));
+                for (int x=-BRUSH_SIZE; x<BRUSH_SIZE; x++)
+                {
+                    for (int y=-BRUSH_SIZE; y<BRUSH_SIZE; y++)
+                    {                        
+                        // compute new color percentage
+                        double distance = sqrt((double)(x*x+y*y));
+                        if (distance <= size)
+                        {
+                            // get color at location
+                            cColorb newColor, black;
+
+                            // double factor = cClamp(K_INK * timeInterval * cClamp(force.length(), 0.0, 10.0) * cClamp(1 - distance/size, 0.0, 1.0), 0.0, 1.0);
+
+                            newColor.setA(0.0);
+                            black.set(0, 0, 0);
+                            // std::cout << newColor.getA() << "\n";
+
+                            // assign new color to pixel
+                            int pixelX = px + x;
+                            int pixelY = py + y;
+                            if ((pixelX >= 0) && (pixelY >= 0) && (pixelX < texture->m_image->getWidth()) && (pixelY < texture->m_image->getHeight()))
+                            {
+                                texture->m_image->setPixelColor(pixelX, pixelY, newColor);
+                                roughnessMap->m_image->setPixelColor(pixelX, pixelY, black);
+                                heightMap->m_image->setPixelColor(pixelX, pixelY, black);
+                            }
+                        }
+                    }
+                }
+
+                texture->markForUpdate();
+                heightMap->markForUpdate();
+                roughnessMap->markForUpdate();
+            }
         }
     }
-//    else
-		wireID = -1;
+    // else
+    wireID = -1;
 	contactForce = cVector3d(0,0,0);
 }
 

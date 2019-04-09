@@ -195,6 +195,8 @@ cVector3d cameraLookAt(0.0, 0.0, 0.0);
 double toolRadius = 0.0005;
 cVector3d toolInitPos(0.0,0.0,0.01);
 
+///////////////////////////////////////////////////
+
 cMultiMesh* bomb;
 cMesh * deathScreen;
 cMesh * winScreen;
@@ -244,6 +246,7 @@ const string brailleTextureFiles[4] =
 vector<cMesh*> brailleLetters;
 
 ///////////////////////////////////////////////////
+
 bool wiresMade = false;
 vector<cMultiMesh*> wires;
 const string wireModels[4] = 
@@ -276,7 +279,21 @@ vector<cColorf> wireColors =
     color4,
 };
 
+////////////////////////////////////////////////////////
+
 vector<cMesh*> lockDials;
+
+////////////////////////////////////////////////////////
+
+const string scratchHintFiles[4] = 
+{
+	"scratchhint4.png",
+	"scratchhint7.png",
+	"scratchhint9.png",
+	"scratchhint10.png",
+};
+vector<cTexture2dPtr> scratchHints;
+int scratchHintDivNumber = 0;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -288,6 +305,22 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
 void updateGraphics(void);
 void updateHaptics(void);
 void close(void);
+
+vector<int> Random(int n)
+{
+    srand((unsigned)time(0));
+	int randomInteger;
+//	int lowest = 0;
+//	int highest = 3;
+//	int range = (highest - lowest);
+	vector<int> tempOrder;
+	while (tempOrder.size() < n) {
+		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
+		if (randomInteger < n && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
+			tempOrder.push_back(randomInteger);
+	}
+    return tempOrder;
+}
 
 void SetColors()
 {
@@ -681,17 +714,7 @@ void SetPanelPositions()
 
 void CreateBrailleOrder() 
 {
-	srand((unsigned)time(0));
-	int randomInteger;
-//	int lowest = 0;
-//	int highest = 3;
-//	int range = (highest - lowest);
-	vector<int> tempOrder;
-	while (tempOrder.size() < 4) {
-		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
-		if (randomInteger < 4 && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
-			tempOrder.push_back(randomInteger);
-	}
+	vector<int> tempOrder = Random(4);
 	for (int i=0; i<4; i++)
 		brailleOrder[i] = tempOrder[i];
 
@@ -700,19 +723,6 @@ void CreateBrailleOrder()
 	}
 	std::cout<<std::endl;
 	*/
-}
-
-void CreateNumberTextures()
-{
-    for (string s : numberTextureFiles)
-    {
-        cTexture2dPtr tex = cTexture2d::create();
-        tex->loadFromFile("textures/" + s);
-        tex->setWrapModeS(GL_REPEAT);
-        tex->setWrapModeT(GL_REPEAT);
-        tex->setUseMipmaps(true);
-        numberTextures.push_back(tex);
-    }
 }
 
 void CreateBrailleTextures() 
@@ -838,10 +848,48 @@ void CreateBrailleLegend()
 	
 }
 
+void CreateScratchTextures()
+{
+    for (string s : scratchHintFiles)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + s);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        scratchHints.push_back(tex);
+    }
+}
+
 void CreateScratchAndWin()
 {
+	vector<int> tempOrder = Random(4);
+
+    cMesh * hint = new cMesh();
+    cCreatePlane(hint, 0.01, 0.01, cVector3d(0,0,0.00025));//cVector3d(0.0125, 0.0065, 0.005));
+
+    hint->createBruteForceCollisionDetector();
+    hint->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+    hint->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+    hint->scale(1.5);
+    hint->setUseTransparency(true, true);
+
+    hint->m_material = MyMaterial::create();
+    hint->m_material->setWhite();
+    hint->m_material->setUseHapticShading(true);
+    hint->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(hint->m_material);
+    hint->m_texture = scratchHints[tempOrder[0]];
+    material->hasTexture = false;
+	hint->setUseTexture(true);
+
+	panels[2]->addChild(hint);
+
+    /////////////////////////////////////////////
+
     scratchSurface = new cMesh();
-    cCreatePlane(scratchSurface, 0.01, 0.01, cVector3d(0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+    cCreatePlane(scratchSurface, 0.01, 0.01, cVector3d(0,0,0.0005));//cVector3d(0.0125, 0.0065, 0.005));
 
     scratchSurface->createBruteForceCollisionDetector();
     scratchSurface->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
@@ -854,22 +902,22 @@ void CreateScratchAndWin()
     scratchSurface->m_material->setUseHapticShading(true);
     scratchSurface->setStiffness(2000.0, true);
 
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(scratchSurface->m_material);
+	material = std::dynamic_pointer_cast<MyMaterial>(scratchSurface->m_material);
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/bamboo-wood-albedo.png");
-    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->loadFromFile("textures/scratchwin.png");
+    albedoMap->setWrapModeS(GL_REPEAT); 
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
 
     cTexture2dPtr heightMap = cTexture2d::create();
-    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->loadFromFile("textures/scratchwin-height.jpg");
     heightMap->setWrapModeS(GL_REPEAT);
     heightMap->setWrapModeT(GL_REPEAT);
     heightMap->setUseMipmaps(true);
 
     cTexture2dPtr roughnessMap = cTexture2d::create();
-    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->loadFromFile("textures/scratchwin-roughness.jpg");
     roughnessMap->setWrapModeS(GL_REPEAT);
     roughnessMap->setWrapModeT(GL_REPEAT);
     roughnessMap->setUseMipmaps(true);
@@ -878,6 +926,7 @@ void CreateScratchAndWin()
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
+    material->id = 12;
 
 	scratchSurface->setUseTexture(true);
 
@@ -886,8 +935,6 @@ void CreateScratchAndWin()
     scratchSurface->m_normalMap = normalMap;
 
     // set haptic properties
-    scratchSurface->m_material->setStaticFriction(0.30);
-    scratchSurface->m_material->setDynamicFriction(0.20);
     scratchSurface->m_material->setHapticTriangleSides(true, false);
     scratchSurface->m_material->setTextureLevel(1.5);
 	
@@ -1001,6 +1048,19 @@ void CreateLockPad(pbutton *o)
 	
 	bomb->addChild(mesh);
 	
+}
+
+void CreateNumberTextures()
+{
+    for (string s : numberTextureFiles)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + s);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        numberTextures.push_back(tex);
+    }
 }
 
 void CreateTimer()
@@ -1391,7 +1451,7 @@ int main(int argc, char* argv[])
 	CreateBraillePuzzle();  
     CreateBrailleLegend();
     
-
+    // Buttons
 	bigbutton = new pbutton();
 //	makeButton(bigbutton);
 	CreateButton(bigbutton);
@@ -1399,6 +1459,7 @@ int main(int argc, char* argv[])
     CreateLockPad(lockbutton);
 
     // Scratch and Win
+    CreateScratchTextures();
     CreateScratchAndWin();
 
     // End game

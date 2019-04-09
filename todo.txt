@@ -1,0 +1,19 @@
+To Do:
+- change center of wire cover
+- abacus
+- link puzzles together
+- randomize
+- magnet troll puzzle
+
+Low priority:
+- round button
+- start screen
+
+Puzzle sequence:
+- scratch win -> button
+- button -> grid for abacus
+- abacus -> dial lock
+- dial lock -> unlock wire cover
+- braille -> wire sequence
+
+- magnet 3x3 -> buttons 3x3 , clear, enter -> troll LED
