@@ -26,6 +26,141 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+extern int wireID = 6;
+extern cVector3d contactForce(0,0,0);
+extern cVector3d returnForce(0,0,0);
+
+struct particle;
+struct spring;
+struct pbutton;
+
+struct particle {
+	double radius;
+	double mass;
+	double damping;
+	cVector3d position;
+	cVector3d velocity;
+	cVector3d sphereForce;
+	bool fixed;
+	vector<spring*> springs;
+	cShapeSphere* sphere;
+	cMesh* msphere;
+};
+struct spring {
+	double k; // spring constant
+	double dk; // damping constant
+	double restlength;
+	particle *p1;
+	particle *p2;
+	cShapeLine* line;
+};
+struct pbutton {
+	vector<particle*> particles;
+	vector<spring*> springs;
+};
+
+void makeParticle(particle *p, double r, double m, double d, cVector3d pos, bool fixed) {
+	p->radius = r;
+	p->mass = m;
+	p->damping = d;
+	p->position = pos;
+	p->velocity = cVector3d(0,0,0);
+	p->sphereForce = cVector3d(0,0,0);
+	p->sphere = new cShapeSphere(r);
+	p->sphere->setLocalPos(pos);
+	p->fixed = fixed;
+}
+void makeSpring(spring *s, double k, double d, double len, particle *a, particle *b) {
+	s->k = k;
+	s->dk = d;
+	s->restlength = len;
+	s->p1 = a;
+	s->p2 = b;
+	s->line = new cShapeLine();
+	s->line->m_pointA = s->p1->position;
+	s->line->m_pointB = s->p2->position;
+}
+
+bool checkButton(pbutton *o, double dt, int i) {
+//	cVector3d fdevice = cVector3d(0,0,0);
+	bool pressed = false;
+	for(particle *p : o->particles) {
+		if (p->fixed) continue;
+		
+//		cVector3d fg = gravity * p->mass;
+		cVector3d fg = cVector3d(9.81,0,0) * p->mass;
+		cVector3d fs = cVector3d(0,0,0);
+		cVector3d fd = -p->damping * p->velocity;
+		
+		for (spring *s : p->springs) {
+			double dist = (s->p1->position - s->p2->position).length();
+			double scalar = s->k*(dist - s->restlength);;
+			if (p == s->p2) scalar *= -1;
+			
+			cVector3d dir;
+			(s->p2->position - s->p1->position).normalizer(dir);
+			double dscalar = -s->dk * (cDot(s->p1->velocity, dir) + cDot(s->p2->velocity, dir));
+			
+			fs += ((scalar + dscalar) * dir);
+			
+			
+			s->line->m_pointA = s->p1->position;
+			s->line->m_pointB = s->p2->position;
+		
+		}
+		cVector3d fnet = fg + fs + fd + p->sphereForce;
+//		cVector3d fnet = fs + fd + p->sphereForce;
+		cVector3d acceleration = fnet/p->mass;
+		p->velocity += (acceleration*dt);
+		p->position += (p->velocity*dt);
+		
+		p->msphere->setLocalPos(p->position);
+		
+		cVector3d pdist = (p->position-o->particles[0]->position);
+//		cVector3d pdist = p->position - pos;
+//		cVector3d pdist = contactForce;
+//		cVector3d pdist = contactForce/500;
+//		if (pdist.length() < (p->radius+0.0005f)) { //cursor radius
+//		cout << wireID << ":" <<p->sphereForce.length() << endl;
+//		cout << wireID << ":" <<contactForce.length() << endl;
+		if ((wireID == i && contactForce.length()>19) ||p->sphereForce.length()>0) {
+			cVector3d fp = cVector3d(1,0,0)*std::min(contactForce.length(),20.0);
+			p->sphereForce = -fp;
+//			fdevice += fp;
+			pressed = true;
+		}
+		else {
+			p->sphereForce = cVector3d(0,0,0);
+			pressed = false;
+		}
+	}	
+//	return fdevice;
+	return pressed;
+}
+
+void makeButton(pbutton *o) {
+	particle *p0 = new particle();
+	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
+	p0->sphere->m_material->setRed();
+	o->particles.push_back(p0);
+	
+	particle *p = new particle();
+	makeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
+	p->sphere->m_material->setRed();
+	o->particles.push_back(p);
+	
+	spring *s = new spring();
+	makeSpring(s, 4000, 100, 0.01, p0, p);
+	p0->springs.push_back(s);
+	p->springs.push_back(s);
+//	o->particles[0]->springs.push_back(s);
+//	o->particles[1]->springs.push_back(s);
+	
+//	o->particles.push_back(p);
+	o->springs.push_back(s);
+	
+}
+
 
 cWorld* world;
 cCamera* camera;
@@ -58,6 +193,7 @@ cVector3d workspaceOffset(0.0, 0.0, 0.0);
 cVector3d cameraLookAt(0.0, 0.0, 0.0);
 
 double toolRadius = 0.0005;
+cVector3d toolInitPos(0.0,0.0,0.01);
 
 cMultiMesh* bomb;
 cMesh * deathScreen;
@@ -66,6 +202,9 @@ cMesh * background;
 cMesh * table;
 vector<cMultiMesh*> panels;
 bool gameOver = false;
+
+pbutton *bigbutton;
+pbutton *lockbutton;
 
 ///////////////////////////////////////////////////
 
@@ -105,7 +244,6 @@ vector<cMesh*> brailleLetters;
 
 ///////////////////////////////////////////////////
 bool wiresMade = false;
-extern int wireID = -1;
 vector<cMultiMesh*> wires;
 const string wireModels[4] = 
 {
@@ -136,6 +274,8 @@ vector<cColorf> wireColors =
     color3,
     color4,
 };
+
+vector<cMesh*> lockDials;
 
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
@@ -189,11 +329,11 @@ void CreateBrailleOrder() {
 	for (int i=0; i<4; i++)
 		brailleOrder[i] = tempOrder[i];
 
-/*	for (int i=0; i<tempOrder.size(); i++) {
+	for (int i=0; i<tempOrder.size(); i++) {
 		std::cout << tempOrder[i];// <<std::endl;
 	}
 	std::cout<<std::endl;
-	*/
+	
 }
 
 void CreateNumberTextures()
@@ -442,6 +582,63 @@ void CreateCutWires()
 // front = 0.006
 // behind: 0.0125
 
+void CreateButton(pbutton *o) {
+	particle *p0 = new particle();
+	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
+	p0->sphere->m_material->setRed();
+	o->particles.push_back(p0);
+	
+	particle *p = new particle();
+	makeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
+	p->sphere->m_material->setRed();
+	o->particles.push_back(p);
+	
+	spring *s = new spring();
+	makeSpring(s, 8000, 100, 0.01, p0, p);
+	p0->springs.push_back(s);
+	p->springs.push_back(s);
+	o->springs.push_back(s);
+	
+/*	for (particle *b : o->particles) {
+		b->sphere->setLocalPos(b->position);
+		bomb->addChild(b->sphere);
+	}
+	*/
+	particle *b = o->particles[1];
+/*	cMesh *mesh = new cMesh();
+	cCreateSphere(mesh, b->radius, 10, 5, b->position);
+	mesh->createBruteForceCollisionDetector();
+    mesh->computeBTN();
+    mesh->m_material = MyMaterial::create();
+	mesh->m_material->setWhite();
+	mesh->m_material->setUseHapticShading(true);
+	mesh->setStiffness(2000.0, true);
+	mesh->setFriction(5, 3.5);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+	material->hasTexture = false;
+	bomb->addChild(mesh);
+	b->sphere = mesh;
+*/
+	b->msphere = new cMesh();
+//	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
+	cCreateCylinder(b->msphere, 2*b->radius, b->radius, 10, 10, 10, true, true, b->position);
+        b->msphere->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+//        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+	b->msphere->createBruteForceCollisionDetector();
+    b->msphere->computeBTN();
+    b->msphere->m_material = MyMaterial::create();
+	b->msphere->m_material->setRed();
+	b->msphere->m_material->setUseHapticShading(true);
+	b->msphere->setStiffness(2000.0, true);
+//	b->msphere->setFriction(1.0, .1);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
+	material->hasTexture = false;
+	material->id = 7;
+	bomb->addChild(b->msphere);
+//	b->sphere = mesh;
+
+}
+
 cVector3d panelPositions[11] = 
 {
     cVector3d(0.006, -0.019, 0.0095),
@@ -477,6 +674,9 @@ void CreatePanels()
 
         MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
         material->hasTexture = false;
+//        material->id = -1;
+//		if (i==1) material->id =7;
+//		if (i==3) material->id =8;
 
         bomb->addChild(panel);
         panels.push_back(panel);
@@ -603,6 +803,114 @@ void CreateBrailleLegend()
 	
 }
 
+void CreateLockPad(pbutton *o)
+{
+		cMesh * mesh = new cMesh();
+	cCreatePlane(mesh,0.01,0.01,cVector3d(0,0,0));
+	    mesh->createBruteForceCollisionDetector();
+        mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+//        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+	    mesh->setLocalPos(cVector3d(0.0068,-0.019,-0.008));
+//	    mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+        mesh->scale(1.5);
+        mesh->setUseTransparency(true, true);
+	
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
+    mesh->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    mesh->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+    material->id = 8;
+
+	mesh->setUseTexture(true);
+	
+	
+	
+	cVector3d pos(0,-0.0027,-0.0055);
+	cVector3d gap(0,0,0.0035);
+	for (int i=0; i<3; i++) {
+		cMesh* m = new cMesh();
+		cCreateCylinder(m, 0.0025, 0.005, 6, 1, 1, true, true, pos+i*gap);
+        m->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
+
+		m->createBruteForceCollisionDetector();
+		m->computeBTN();
+		m->m_material = MyMaterial::create();
+		m->m_material->setRed();
+		m->m_material->setUseHapticShading(true);
+		m->setStiffness(2000.0, true);
+		m->setFriction(2.0, .5);
+		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(m->m_material);
+		material->hasTexture = false;
+		material->id = 9+i;
+		lockDials.push_back(m);
+		mesh->addChild(m);
+	}
+	
+	
+	particle *p0 = new particle();
+	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.006, -0.007, -0.001), true);
+	p0->sphere->m_material->setRed();
+	o->particles.push_back(p0);
+	
+	particle *p = new particle();
+	makeParticle(p, 0.0015, .5, 10.0, cVector3d(0.004, -0.007, -0.001), false);
+	p->sphere->m_material->setRed();
+	o->particles.push_back(p);
+	
+	spring *s = new spring();
+	makeSpring(s, 7000, 100, 0.01, p0, p);
+	p0->springs.push_back(s);
+	p->springs.push_back(s);
+	o->springs.push_back(s);
+	
+	particle *b = o->particles[1];
+	b->msphere = new cMesh();
+//	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
+	cCreateCylinder(b->msphere, 4*b->radius, b->radius, 10, 10, 10, true, true, b->position);
+        b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+//        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+	b->msphere->createBruteForceCollisionDetector();
+    b->msphere->computeBTN();
+    b->msphere->m_material = MyMaterial::create();
+	b->msphere->m_material->setRed();
+	b->msphere->m_material->setUseHapticShading(true);
+	b->msphere->setStiffness(2000.0, true);
+	b->msphere->setFriction(2.5, 1.0);
+	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
+	material0->hasTexture = false;
+	material0->id = 8;
+	bomb->addChild(b->msphere);
+//	mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+	
+	bomb->addChild(mesh);
+	
+}
+
 void CreateTimer()
 {
     // Create timer object
@@ -702,6 +1010,79 @@ void UpdateTimeElapsed()
 
     // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
+
+void RotateObjectsWithDevice(double timeInterval) 
+{
+    cVector3d angVel(0.0, 0.0, 0.4);
+
+//	double timeInterval = 0.001;
+	const double INERTIA = 0.4;
+        const double MAX_ANG_VEL = 10.0;
+        const double DAMPING = 2.8;
+
+        // get position of cursor in global coordinates
+        cVector3d toolPos = tool->getDeviceGlobalPos();
+
+//	for (cMesh *m : lockDials) {
+	cMesh *m;
+	if (wireID >8 && wireID <12)
+		m = lockDials[wireID-9];
+	else return;
+
+        // get position of object in global coordinates
+        cVector3d objectPos = m->getGlobalPos();
+
+        // compute a vector from the center of mass of the object (point of rotation) to the tool
+        cVector3d v = cSub(toolPos, objectPos);
+
+        // compute angular acceleration based on the interaction forces
+        // between the tool and the object
+        cVector3d angAcc(0,0,0);
+        if (v.length() > 0.0)
+        {
+            // get the last force applied to the cursor in global coordinates
+            // we negate the result to obtain the opposite force that is applied on the
+            // object
+            cVector3d toolForce = -tool->getDeviceGlobalForce();
+//            cVector3d toolForce = -contactForce;
+
+            // compute the effective force that contributes to rotating the object.
+            cVector3d force = toolForce - cProject(toolForce, v);
+
+            // compute the resulting torque
+            cVector3d torque = cMul(v.length(), cCross( cNormalize(v), force));
+
+            // update rotational acceleration
+            angAcc = (1.0 / INERTIA) * torque;
+        }
+
+        // update rotational velocity
+        angVel.add(timeInterval * angAcc);
+
+        // set a threshold on the rotational velocity term
+        double vel = angVel.length();
+        if (vel > MAX_ANG_VEL)
+        {
+            angVel.mul(MAX_ANG_VEL / vel);
+        }
+
+        // add some damping too
+        angVel.mul(1.0 - DAMPING * timeInterval);
+
+        // if user switch is pressed, set angular velocity to zero
+        if (tool->getUserSwitch(0) == 1)
+        {
+            angVel.zero();
+        }
+
+        // compute the next rotation configuration of the object
+        if (angVel.length() > C_SMALL)
+        {
+            m->rotateAboutGlobalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+        }
+//	}
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -833,7 +1214,27 @@ int main(int argc, char* argv[])
 
     handler = new cHapticDeviceHandler();
     handler->getDevice(hapticDevice, 0);
+    
+/*    
+    // open a connection to haptic device
+    hapticDevice->open();
 
+    // calibrate device (if necessary)
+    hapticDevice->calibrate();
+
+    // retrieve information about the current haptic device
+    cHapticDeviceInfo info = hapticDevice->getSpecifications();
+
+    // display a reference frame if haptic device supports orientations
+    if (info.m_sensedRotation == true)
+    {
+        // display reference frame
+        cursor->setShowFrame(true);
+
+        // set the size of the reference frame
+        cursor->setFrameSize(0.05);
+    }
+*/
     hapticDevice->setEnableGripperUserSwitch(true);
 
     tool = new cToolCursor(world);
@@ -848,6 +1249,7 @@ int main(int argc, char* argv[])
     tool->m_hapticPoint->m_sphereProxy->m_material->setWhite();
     
     tool->setRadius(0.0005, toolRadius);
+//    tool->setLocalPos(toolInitPos);
     tool->setHapticDevice(hapticDevice);
     tool->setWaitForSmallForce(true);
     tool->start();
@@ -867,15 +1269,6 @@ int main(int argc, char* argv[])
     camera->m_frontLayer->addChild(labelDebug);
 
     camera->setWireMode(true);
-
-    //--------------------------------------------------------------------------
-    // START SIMULATION
-    //--------------------------------------------------------------------------
-
-    hapticsThread = new cThread();
-    hapticsThread->start(updateHaptics, CTHREAD_PRIORITY_HAPTICS);
-
-    atexit(close);
 
     //--------------------------------------------------------------------------
     // MAIN GRAPHIC LOOP
@@ -900,12 +1293,31 @@ int main(int argc, char* argv[])
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
     CreateBrailleLegend();
+    
+
+	bigbutton = new pbutton();
+//	makeButton(bigbutton);
+	CreateButton(bigbutton);
+    lockbutton = new pbutton();
+    CreateLockPad(lockbutton);
 
     // End game
     CreateEndGameScreens();
 
     // After setup
     SetPanelPositions();
+    
+    
+    
+    //--------------------------------------------------------------------------
+    // START SIMULATION
+    //--------------------------------------------------------------------------
+
+    hapticsThread = new cThread();
+    hapticsThread->start(updateHaptics, CTHREAD_PRIORITY_HAPTICS);
+
+    atexit(close);
+	///////////////////////////////////////////////////
     
     cPrecisionClock clock;
     startTime = clock.getCPUTimeSeconds();
@@ -1087,9 +1499,33 @@ void updateHaptics(void)
     bool leftPressed = false;
     bool rightPressed = false;
     bool midPressed = false;
+    
+    bool oldButton0 = false;
+    bool oldButton1 = false;
+
+    cPrecisionClock clock;
+    clock.reset();
+
 
     while(simulationRunning)
     {
+		
+		
+		        /////////////////////////////////////////////////////////////////////
+        // SIMULATION TIME
+        /////////////////////////////////////////////////////////////////////
+
+        // stop the simulation clock
+        clock.stop();
+
+        // read the time increment in seconds
+        double timeInterval = clock.getCurrentTimeSeconds();
+
+        // restart the simulation clock
+        clock.reset();
+        clock.start();
+
+
        //////////////////////
         // READ HAPTIC DEVICE
        //////////////////////
@@ -1141,28 +1577,79 @@ void updateHaptics(void)
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
 			rightPressed = false;
         }
+//        tool->setLocalRot(bomb->getLocalRot());
+//        cVector3d force(0, 0, 0);
 
-        world->computeGlobalPositions();
+//		force = update(bigbutton, 0.001, position);
+//		if (update(bigbutton, 0.001, position))
+//			cout << "pressed" << endl;
+//		else
+//			cout << "released" << endl;
+		bool curButton0 = checkButton(bigbutton, 0.001, 7);
+		if (curButton0 != oldButton0) {
+			if (!oldButton0 && curButton0)
+				cout << "pressed\n";
+			else
+				cout << "released\n";
+		}
+		oldButton0 = curButton0;
+		bool curButton1 = checkButton(lockbutton, 0.001, 8);
+		if (curButton1 != oldButton1) {
+			if (!oldButton1 && curButton1)
+				cout << "pressed\n";
+			else
+				cout << "released\n";
+		}
+		oldButton1 = curButton1;
+
+//        tool->setLocalPos(tool->getLocalPos());
+
+//		std::cout << wireID << std::endl;
+		world->computeGlobalPositions();
 
        //////////////////////
         // UPDATE 3D CURSOR MODEL
        //////////////////////
-
+        
         tool->updateFromDevice();
 
        //////////////////////
         // COMPUTE FORCES
        //////////////////////
-
         tool->computeInteractionForces();
+
+
+/*
+	if (wireID < 0){
+//		tool->setLocalPos(position);
+//      tool->setLocalRot(rotation);
+
+//		tool->setLocalPos(position);
+//		cVector3d r0;
+//      tool->setLocalRot(bomb->getLocalRot());
+
 
         cVector3d force(0, 0, 0);
         cVector3d torque(0, 0, 0);
         double gripperForce = 0.0;
 
-        tool->applyToDevice();
+//		cout << "dfd" << endl;
+		force = update(bigbutton, 0.001, position);
 
+
+        // send computed force, torque, and gripper force to haptic device
+        hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
+	}
+	else {
+	*/	
+		
+        tool->applyToDevice();
+//   tool->computeInteractionForces();
+//             tool->applyToDevice();
+//}
        //////////////////////
+       
+       RotateObjectsWithDevice(timeInterval);
 
         freqCounterHaptics.signal(1);
     }

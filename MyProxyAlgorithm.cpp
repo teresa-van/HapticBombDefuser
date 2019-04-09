@@ -49,6 +49,8 @@ using namespace chai3d;
 */
 //==============================================================================
 extern int wireID;
+extern cVector3d contactForce;
+extern cVector3d returnForce;
 
 void MyProxyAlgorithm::updateForce()
 {
@@ -89,18 +91,31 @@ void MyProxyAlgorithm::updateForce()
 
         // cVector3d surfaceNormal = c0->m_localNormal;
         cVector3d surfaceNormal = computeShadedSurfaceNormal(c0);
-
-        if (MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(c0->m_object->m_material))
+        MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(c0->m_object->m_material);
+//		wireID = material->id;
+        if (material)
         {
 			wireID = material->id;
-            if (!material->hasTexture) return;
+			cVector3d F = -material->getStiffness() * (m_deviceGlobalPos - m_proxyGlobalPos);
+            double roughnessFactor = 5.0;
+//				contactForce = cVector3d(0,0,0);
+            if (material->id == 7 ||material->id == 8 || contactForce.length()>0)
+//				contactForce = (m_deviceGlobalPos - m_proxyGlobalPos);
+				contactForce = F;
+//			else
+//				contactForce = cVector3d(0,0,0);
+            if (!material->hasTexture) {
+//				m_lastGlobalForce = -returnForce;
+//				m_lastGlobalForce = cVector3d(0,0,0);
+//				wireID = -1;
+//contactForce = cVector3d(0,0,0);
+				return;
+			}
          
 			
 //			std::cout<< material->id << std::endl;
 
-            cVector3d F = -material->getStiffness() * (m_deviceGlobalPos - m_proxyGlobalPos);
-            double roughnessFactor = 5.0;
-
+            
             // cImagePtr normalMap = material->m_normal_map->m_image;
             cImagePtr heightMap = material->m_height_map->m_image;
             cImagePtr roughnessMap = material->m_roughness_map->m_image;
@@ -147,8 +162,9 @@ void MyProxyAlgorithm::updateForce()
             c0->m_object->setFriction(mu_s, mu_k);
         }
     }
-    else
+//    else
 		wireID = -1;
+	contactForce = cVector3d(0,0,0);
 }
 
 

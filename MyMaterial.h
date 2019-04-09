@@ -36,7 +36,7 @@ public:
     chai3d::cTexture2dPtr m_height_map;
     chai3d::cTexture2dPtr m_roughness_map;
     bool hasTexture;
-    int id = -1;
+    int id = 6;
 };
 
 //------------------------------------------------------------------------------
