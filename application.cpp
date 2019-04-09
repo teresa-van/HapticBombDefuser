@@ -606,7 +606,8 @@ void CreateButton(pbutton *o) {
 	cCreateCylinder(b->msphere, 2*b->radius, b->radius, 10, 10, 10, true, true, b->position);
         b->msphere->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
 //        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-	b->msphere->createBruteForceCollisionDetector();
+//	b->msphere->createBruteForceCollisionDetector();
+b->msphere->createAABBCollisionDetector(toolRadius);
     b->msphere->computeBTN();
     b->msphere->m_material = MyMaterial::create();
 	b->msphere->m_material->setRed();
@@ -934,18 +935,19 @@ void CreateLockPad(pbutton *o)
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
-    material->id = 8;
+//    material->id = 8;
 
 	mesh->setUseTexture(true);
 	
 	
 	
-	cVector3d pos(0,-0.0027,-0.0055);
+	cVector3d pos(0.002,-0.0027,-0.0055);
 	cVector3d gap(0,0,0.0035);
 	for (int i=0; i<3; i++) {
 		cMesh* m = new cMesh();
 		cCreateCylinder(m, 0.0025, 0.005, 6, 1, 1, true, true, pos+i*gap);
         m->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
+        m->rotateAboutGlobalAxisDeg(cVector3d(1,0,0), 90);
 
 		m->createBruteForceCollisionDetector();
 		m->computeBTN();
@@ -1108,7 +1110,7 @@ void RotateObjectsWithDevice(double timeInterval)
 //	double timeInterval = 0.001;
 	const double INERTIA = 0.4;
         const double MAX_ANG_VEL = 10.0;
-        const double DAMPING = 2.8;
+        const double DAMPING = 0.1;
 
         // get position of cursor in global coordinates
         cVector3d toolPos = tool->getDeviceGlobalPos();
@@ -1168,7 +1170,9 @@ void RotateObjectsWithDevice(double timeInterval)
         // compute the next rotation configuration of the object
         if (angVel.length() > C_SMALL)
         {
-            m->rotateAboutGlobalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+//            m->rotateAboutGlobalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+//            m->rotateAboutLocalAxisRad(cNormalize(cVector3d(0.002,-0.0027,-0.0055)-cVector3d(0.002,-0.0027,-0.005)), timeInterval * angVel.length());
+            m->rotateAboutLocalAxisRad(cVector3d(0,0,angVel.z()), timeInterval * angVel.length());
         }
 //	}
 }
