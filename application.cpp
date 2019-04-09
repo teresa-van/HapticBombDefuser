@@ -901,7 +901,7 @@ void CreateLockPad(pbutton *o)
 	    mesh->createBruteForceCollisionDetector();
         mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
 //        mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-	    mesh->setLocalPos(cVector3d(0.0068,-0.019,-0.008));
+//	    mesh->setLocalPos(cVector3d(0.0068,-0.019,-0.008));
 //	    mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
         mesh->scale(1.5);
         mesh->setUseTransparency(true, true);
@@ -941,26 +941,49 @@ void CreateLockPad(pbutton *o)
 	
 	
 	
-	cVector3d pos(0.002,-0.0027,-0.0055);
-	cVector3d gap(0,0,0.0035);
+//	cVector3d pos(-0.00,-0.0027,-0.0055);
+	cVector3d pos(0.0,-0.002,0.0);
+	cVector3d gap(0.0035,0,0);
+//	cVector3d gap(0,0,0.0);
 	for (int i=0; i<3; i++) {
 		cMesh* m = new cMesh();
-		cCreateCylinder(m, 0.0025, 0.005, 6, 1, 1, true, true, pos+i*gap);
-        m->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
-        m->rotateAboutGlobalAxisDeg(cVector3d(1,0,0), 90);
+		//m->setUseCulling(false);
 
-		m->createBruteForceCollisionDetector();
+		cCreateCylinder(m, 0.0025, 0.005, 6, 5, 5, true, true);//, pos+i*gap);
+//		m->setLocalPos(cVector3d(0.02, 0.0, (pos+i*gap).z()));
+		        m->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
+		m->setLocalPos(pos+i*gap);
+		        m->rotateAboutGlobalAxisDeg(cVector3d(1,0,0), 90);
+
+		//		m->createBruteForceCollisionDetector();
+
+		m->computeAllNormals();
+//		m->setWireMode(true);
+		m->computeAllEdges(30);
+		cColorf c;
+		c.setBlack();
+		m->setEdgeProperties(1,c);
+		m->setShowTriangles(true);
+		m->setShowEdges(true);
+
+		m->setUseMaterial(true);
+
+		// compute a boundary box
+		m->computeBoundaryBox(true);
+		m->createAABBCollisionDetector(toolRadius);
 		m->computeBTN();
 		m->m_material = MyMaterial::create();
 		m->m_material->setRed();
 		m->m_material->setUseHapticShading(true);
-		m->setStiffness(2000.0, true);
+		m->setStiffness(1000.0, true);
+		m->m_material->setHapticTriangleSides(true, true);
 		m->setFriction(2.0, .5);
 		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(m->m_material);
 		material->hasTexture = false;
 		material->id = 9+i;
 		lockDials.push_back(m);
-		mesh->addChild(m);
+				mesh->addChild(m);
+//		bomb->addChild(m);
 	}
 	
 	
@@ -997,9 +1020,9 @@ void CreateLockPad(pbutton *o)
 	material0->hasTexture = false;
 	material0->id = 8;
 	bomb->addChild(b->msphere);
-//	mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
 	
-	bomb->addChild(mesh);
+	panels[3]->addChild(mesh);
+//	bomb->addChild(mesh);
 	
 }
 
@@ -1103,30 +1126,26 @@ void UpdateTimeElapsed()
     // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
-void RotateObjectsWithDevice(double timeInterval) 
+cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval) 
 {
-    cVector3d angVel(0.0, 0.0, 0.4);
 
 //	double timeInterval = 0.001;
-	const double INERTIA = 0.4;
-        const double MAX_ANG_VEL = 10.0;
-        const double DAMPING = 0.1;
+	const double INERTIA = 0.004;
+        const double MAX_ANG_VEL = 1.0;
+        const double DAMPING = 0.01;
 
         // get position of cursor in global coordinates
         cVector3d toolPos = tool->getDeviceGlobalPos();
-
-//	for (cMesh *m : lockDials) {
 	cMesh *m;
 	if (wireID >8 && wireID <12)
 		m = lockDials[wireID-9];
-	else return;
+//	else return cVector3d(0,0,0);
+	else return angVel;
 
         // get position of object in global coordinates
         cVector3d objectPos = m->getGlobalPos();
-
         // compute a vector from the center of mass of the object (point of rotation) to the tool
         cVector3d v = cSub(toolPos, objectPos);
-
         // compute angular acceleration based on the interaction forces
         // between the tool and the object
         cVector3d angAcc(0,0,0);
@@ -1166,14 +1185,15 @@ void RotateObjectsWithDevice(double timeInterval)
         {
             angVel.zero();
         }
-
         // compute the next rotation configuration of the object
         if (angVel.length() > C_SMALL)
         {
-//            m->rotateAboutGlobalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
-//            m->rotateAboutLocalAxisRad(cNormalize(cVector3d(0.002,-0.0027,-0.0055)-cVector3d(0.002,-0.0027,-0.005)), timeInterval * angVel.length());
-            m->rotateAboutLocalAxisRad(cVector3d(0,0,angVel.z()), timeInterval * angVel.length());
+            angVel.x(0.0);
+            angVel.y(0.0);
+
+            m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
         }
+        return angVel;
 //	}
 }
 
@@ -1345,6 +1365,7 @@ int main(int argc, char* argv[])
     tool->setRadius(0.0005, toolRadius);
 //    tool->setLocalPos(toolInitPos);
     tool->setHapticDevice(hapticDevice);
+    tool->enableDynamicObjects(true);	//seemed to help for vel to angvel objects
     tool->setWaitForSmallForce(true);
     tool->start();
 
@@ -1593,6 +1614,9 @@ void updateWorkspace(cVector3d devicePosition)
 
 void updateHaptics(void)
 {
+	
+    cVector3d angVel(0.0, 0.0, 0.4);
+
     simulationRunning  = true;
     simulationFinished = false;
 
@@ -1759,7 +1783,7 @@ void updateHaptics(void)
 //}
        //////////////////////
        
-       RotateObjectsWithDevice(timeInterval);
+       angVel = RotateObjectsWithDevice(angVel, timeInterval);
 
         freqCounterHaptics.signal(1);
     }
