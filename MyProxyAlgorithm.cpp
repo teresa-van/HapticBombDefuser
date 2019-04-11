@@ -111,7 +111,7 @@ void MyProxyAlgorithm::updateForce()
 //			std::cout<< material->id << std::endl;
 
 
-            // CALCULATE TEXTURE FORCED (FRICTION, BUMPS)
+            // CALCULATE TEXTURE FORCES (FRICTION, BUMPS)
             ////////////////////////////////////////////////////////////////////////////////////////
             // cImagePtr normalMap = material->m_normal_map->m_image;
             cImagePtr heightMap = material->m_height_map->m_image;
@@ -210,8 +210,8 @@ void MyProxyAlgorithm::updateForce()
                 }
 
                 texture->markForUpdate();
-                heightMap->markForUpdate();
-                roughnessMap->markForUpdate();
+                //heightMap->markForUpdate();
+                //roughnessMap->markForUpdate();
             }
         }
     }

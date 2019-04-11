@@ -1280,11 +1280,11 @@ void CreateSliderPuzzle()
 
 	mesh->setUseTexture(true);
 	
-	cout << "1" << endl;
+	//cout << "1" << endl;
 	
 	for (int i=0; i<3; i++)
 		CreateSlider(i);
-	cout << "2" << endl;
+	//cout << "2" << endl;
 //	for (int i=0; i<sliderCylinder.size(); i++) {
 	for (int i=0; i<sliderMin.size(); i++) {
 		mesh->addChild(sliderMin[i]);
@@ -1294,7 +1294,7 @@ void CreateSliderPuzzle()
 		mesh->addChild(sliderDisplay[i]);
 		mesh->addChild(sliderLabel[i]);
 	}
-	cout << "3" << endl;
+	//cout << "3" << endl;
 	
 	panels[6]->addChild(mesh);
 	
@@ -1506,7 +1506,7 @@ cVector3d getDialValues()
 //						((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length())) *360/(2*M_PI);
 		double angle = (cDot(cNormalize(cVector3d(0.0,0.01,0.0)-pos),cNormalize(newPos-pos)));// / 
 						//((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length()));
-		cout << angle << endl;
+		//cout << angle << endl;
 		double ccwAngle;
 		if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
 			if (ry >0) ccwAngle = 0;
@@ -2012,9 +2012,7 @@ void updateHaptics(void)
 
     while(simulationRunning)
     {
-		
-		
-		        /////////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////
         // SIMULATION TIME
         /////////////////////////////////////////////////////////////////////
 
@@ -2134,7 +2132,7 @@ void updateHaptics(void)
        
        angVel = RotateObjectsWithDevice(angVel, timeInterval);
        cVector3d dialValues = getDialValues();
-       cout << dialValues << endl;
+       //cout << dialValues << endl;
        checkSlider(timeInterval);
 //       cout << getSliderValues() << endl; 
 
