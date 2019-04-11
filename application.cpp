@@ -511,6 +511,8 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
 
+	bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 180);
+
     world->addChild(bomb);
 }
 
@@ -691,7 +693,7 @@ b->msphere->createAABBCollisionDetector(toolRadius);
 void CreateSlider(int i) {
 	double gap = 0.005*i;
 	double maxStiffness = 2000;
-	double maxLinearForce = 30;
+	double maxLinearForce = 0;
     ////////////////////////////////////////////////////////////////////////////
     // SHAPE - SPHERE 0
     ////////////////////////////////////////////////////////////////////////////
@@ -733,18 +735,19 @@ void CreateSlider(int i) {
 	cShapeLine * line = new cShapeLine(m0, m1);
 	line->m_colorPointA.setRed();
     line->m_colorPointB.setRed();
-//    line->createEffectMagnetic();
-//    line->m_material->setMagnetMaxDistance(0.0005);
-//    line->m_material->setMagnetMaxForce(0.3 * maxLinearForce);
-//    line->m_material->setStiffness(0.2 * maxStiffness);
+    line->createEffectMagnetic();
+    line->m_material->setMagnetMaxDistance(0.0005);
+    line->m_material->setMagnetMaxForce(0.3 * maxLinearForce);
+    line->m_material->setStiffness(0.2 * maxStiffness);
 
     
     cMesh * m2 = new cMesh();
     cCreateCylinder(m2, 0.0015, 0.0015, 10, 1, 1, true, true);
 	m2->rotateAboutGlobalAxisDeg(cVector3d(0.0, 1.0, 0.0), 90);
 	m2->setLocalPos(-0.002, 0.003-gap, 0.001);
-	m2->createAABBCollisionDetector(toolRadius);
-	m2->computeBTN();
+	m2->createBruteForceCollisionDetector();
+//	m2->createAABBCollisionDetector(toolRadius);
+//	m2->computeBTN();
 	m2->m_material = MyMaterial::create();
 	m2->m_material->setRed();
 	m2->m_material->setUseHapticShading(true);
@@ -1530,9 +1533,14 @@ void checkSlider(double timeInterval)
 //	cout << (-tool->getDeviceGlobalForce()).x() << endl;
 //	double force = cClamp((cNormalize(-tool->getDeviceLocalForce()).x()-.25),-0.5,0.5);
 //	double force = cClamp((cNormalize(-contactForce).x()+.2),-0.5,0.5);
+	double force = cClamp((cNormalize(-contactForce).x()),-0.5,0.5);
 //	double force = cNormalize(-tool->getDeviceGlobalForce()).x();
-	double force = cNormalize(-tool->getDeviceLocalForce()).x();
+//	double force = cNormalize(-tool->getDeviceLocalForce()).x();
+//	double force = -contactForce.length();
 //	double force = -contactForce.x();
+//	double force = -tool->getDeviceLocalForce().x()-contactForce.x();
+//	double force = -tool->getDeviceGlobalForce().x();
+//	double force = 0.0;
 //	cout << (force) << endl;
 	if (abs(force) > 0) {
 
@@ -1553,6 +1561,7 @@ void checkSlider(double timeInterval)
 //		cout << wireID-12<< ":"<<(sliderCylinder[wireID-12]->getLocalPos().x())+0.0065 << endl;
 			}
 }
+
 cVector3d getSliderValues()
 {
 //	if (wireID <=11 || wireID >=15) return;
@@ -1991,7 +2000,8 @@ void updateHaptics(void)
 {
 	
     cVector3d angVel(0.0, 0.0, 0.4);
-
+	cVector3d linVel(0,0.1,0);
+	
     simulationRunning  = true;
     simulationFinished = false;
 
@@ -2130,6 +2140,7 @@ void updateHaptics(void)
        cVector3d dialValues = getDialValues();
 
        checkSlider(timeInterval);
+//       linVel = checkSlider(linVel, timeInterval);
 //       cout << getSliderValues() << endl; 
 
         freqCounterHaptics.signal(1);
