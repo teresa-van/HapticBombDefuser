@@ -161,7 +161,7 @@ void makeButton(pbutton *o) {
 	
 }
 
-
+#if(1)
 cWorld* world;
 cCamera* camera;
 cSpotLight* light;
@@ -213,6 +213,8 @@ pbutton *lockbutton;
 
 int timeLimit[4] = {0,5,0,0}; // mm:ss
 vector<cTexture2dPtr> numberTextures;
+#endif
+
 const string numberTextureFiles[11] = 
 {
     "0.png",
@@ -282,7 +284,28 @@ vector<cColorf> wireColors =
 ////////////////////////////////////////////////////////
 
 vector<cMesh*> lockDials;
+vector<cShapeLine*> dialDir;
+/*
+vector<cShapeSphere*> sliderMin;
+vector<cShapeSphere*> sliderMax;
+vector<cShapeLine*> sliderLine;
+vector<cShapeCylinder*> sliderCylinder;
+vector<cMesh*> sliderLabel;
+vector<cShapeBox*>	sliderDisplay;
+*/
+vector<cMesh*> sliderMin;
+vector<cMesh*> sliderMax;
+vector<cShapeLine*> sliderLine;
+vector<cMesh*> sliderCylinder;
+vector<cMesh*> sliderDisplay;
+vector<cMesh*> sliderLabel;
 
+/*vector<cShapeSphere*> sliderMax;
+vector<cShapeLine*> sliderLine;
+vector<cShapeCylinder*> sliderCylinder;
+vector<cMesh*> sliderLabel;
+vector<cShapeBox*>	sliderDisplay;
+*/
 ////////////////////////////////////////////////////////
 
 const string scratchHintFiles[4] = 
@@ -655,6 +678,138 @@ b->msphere->createAABBCollisionDetector(toolRadius);
 
 }
 
+
+void CreateSlider(int i) {
+	double gap = 0.005*i;
+	double maxStiffness = 2000;
+	double maxLinearForce = 30;
+    ////////////////////////////////////////////////////////////////////////////
+    // SHAPE - SPHERE 0
+    ////////////////////////////////////////////////////////////////////////////
+    // create a sphere
+//    cShapeSphere *sphere0 = new cShapeSphere(0.001);
+//    world->addChild(sphere0);
+    // set position
+//    sphere0->setLocalPos(-0.007, 0.0, 0.0);
+    
+    cMesh * m0 = new cMesh();
+    cCreateSphere(m0, 0.0005, 10, 5);
+	m0->setLocalPos(-0.007, 0.003-gap, 0.001);
+	m0->createBruteForceCollisionDetector();
+//	m0->createAABBCollisionDetector(toolRadius);
+//	m0->computeBTN();
+	m0->m_material = MyMaterial::create();
+	m0->m_material->setRed();
+	m0->m_material->setUseHapticShading(true);
+	m0->setStiffness(800.0, true);
+	m0->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(m0->m_material);
+	material0->hasTexture = false;
+    
+    cMesh * m1 = new cMesh();
+    cCreateSphere(m1, 0.0005, 10, 5);
+	m1->setLocalPos(0.003, 0.003-gap, 0.001);
+    m1->createBruteForceCollisionDetector();
+//	m1->createAABBCollisionDetector(toolRadius);
+//	m1->computeBTN();
+	m1->m_material = MyMaterial::create();
+	m1->m_material->setRed();
+	m1->m_material->setUseHapticShading(true);
+	m1->setStiffness(800.0, true);
+	m1->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material1 = std::dynamic_pointer_cast<MyMaterial>(m1->m_material);
+	material1->hasTexture = false;
+	
+//	cShapeLine * line = new cShapeLine(m0->getLocalPos(), m1->getLocalPos());
+	cShapeLine * line = new cShapeLine(m0, m1);
+	line->m_colorPointA.setRed();
+    line->m_colorPointB.setRed();
+//    line->createEffectMagnetic();
+//    line->m_material->setMagnetMaxDistance(0.0005);
+//    line->m_material->setMagnetMaxForce(0.3 * maxLinearForce);
+//    line->m_material->setStiffness(0.2 * maxStiffness);
+
+    
+    cMesh * m2 = new cMesh();
+    cCreateCylinder(m2, 0.0015, 0.0015, 10, 1, 1, true, true);
+	m2->rotateAboutGlobalAxisDeg(cVector3d(0.0, 1.0, 0.0), 90);
+	m2->setLocalPos(-0.002, 0.003-gap, 0.001);
+	m2->createAABBCollisionDetector(toolRadius);
+	m2->computeBTN();
+	m2->m_material = MyMaterial::create();
+	m2->m_material->setRed();
+	m2->m_material->setUseHapticShading(true);
+	m2->setStiffness(2000.0, true);
+	m2->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material2 = std::dynamic_pointer_cast<MyMaterial>(m2->m_material);
+	material2->hasTexture = false;
+	material2->id = 12+i;
+	
+    cMesh * m3 = new cMesh();
+    cCreateBox(m3, 0.004, 0.0045, 0.0025);
+//	m3->rotateAboutGlobalAxisDeg(cVector3d(0.0, 1.0, 0.0), 90);
+	m3->setLocalPos(0.006, 0.0045-gap, 0.001);
+	m3->createAABBCollisionDetector(toolRadius);
+	m3->computeBTN();
+	m3->m_material = MyMaterial::create();
+	m3->m_material->setRed();
+	m3->m_material->setUseHapticShading(true);
+	m3->setStiffness(2000.0, true);
+	m3->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material3 = std::dynamic_pointer_cast<MyMaterial>(m3->m_material);
+	material3->hasTexture = false;
+		
+    cMesh * m4 = new cMesh();
+	cCreatePlane(m4, 0.011, 0.003, cVector3d(0,0,0));
+	m4->setLocalPos(-0.002, 0.0045-gap, 0.000682);
+    m4->createBruteForceCollisionDetector();
+//	m4->createAABBCollisionDetector(toolRadius);
+//	m4->computeBTN();
+	m4->m_material = MyMaterial::create();
+	m4->m_material->setWhite();
+	m4->m_material->setUseHapticShading(true);
+	m4->setStiffness(2000.0, true);
+	m4->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material4 = std::dynamic_pointer_cast<MyMaterial>(m4->m_material);
+	cTexture2dPtr albedoMap = cTexture2d::create();
+	// ticks
+    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+/*	// bumpy ticks
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/brailleEmpty.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+	// leave black
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/brailleEmpty.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    m4->m_texture = albedoMap;
+    material4->m_height_map = heightMap;
+    material4->m_roughness_map = roughnessMap;
+    material4->hasTexture = true;
+    */
+    m4->m_texture = albedoMap;
+    material4->hasTexture = false;
+
+	m4->setUseTexture(true);
+	
+	
+	
+	sliderMin.push_back(m0);
+	sliderMax.push_back(m1);
+	sliderLine.push_back(line);
+	sliderCylinder.push_back(m2);
+	sliderDisplay.push_back(m3);
+	sliderLabel.push_back(m4);
+}
+
 cVector3d panelPositions[11] = 
 {
     cVector3d(0.006, -0.019, 0.0095),
@@ -926,7 +1081,7 @@ void CreateScratchAndWin()
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
-    material->id = 12;
+    material->id = 40;
 
 	scratchSurface->setUseTexture(true);
 
@@ -1028,6 +1183,15 @@ void CreateLockPad(pbutton *o)
 		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(m->m_material);
 		material->hasTexture = false;
 		material->id = 9+i;
+		
+		cShapeLine * line = new cShapeLine(cVector3d(0,0,0), cVector3d(0,1,0)*0.01);
+//		line->setLocalPos(
+		line->m_colorPointA.setWhite();
+		line->m_colorPointB.setWhite();
+		
+		dialDir.push_back(line);
+		m->addChild(line);
+			
 		lockDials.push_back(m);
 				mesh->addChild(m);
 //		bomb->addChild(m);
@@ -1070,6 +1234,69 @@ void CreateLockPad(pbutton *o)
 	
 	panels[3]->addChild(mesh);
 //	bomb->addChild(mesh);
+	
+}
+
+void CreateSliderPuzzle()
+{
+	cMesh * mesh = new cMesh();
+	cCreatePlane(mesh, 0.01, 0.01, cVector3d(0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+
+//    mesh->createBruteForceCollisionDetector();
+    mesh->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+    mesh->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+    mesh->scale(1.5);
+    mesh->setUseTransparency(true, true);
+	
+    mesh->m_material = MyMaterial::create();
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
+    mesh->setStiffness(2000.0, true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+
+    cTexture2dPtr heightMap = cTexture2d::create();
+    heightMap->loadFromFile("textures/rust-height.png");
+    heightMap->setWrapModeS(GL_REPEAT);
+    heightMap->setWrapModeT(GL_REPEAT);
+    heightMap->setUseMipmaps(true);
+
+    cTexture2dPtr roughnessMap = cTexture2d::create();
+    roughnessMap->loadFromFile("textures/rust-roughness.png");
+    roughnessMap->setWrapModeS(GL_REPEAT);
+    roughnessMap->setWrapModeT(GL_REPEAT);
+    roughnessMap->setUseMipmaps(true);
+
+    mesh->m_texture = albedoMap;
+    material->m_height_map = heightMap;
+    material->m_roughness_map = roughnessMap;
+    material->hasTexture = true;
+
+	mesh->setUseTexture(true);
+	
+	cout << "1" << endl;
+	
+	for (int i=0; i<3; i++)
+		CreateSlider(i);
+	cout << "2" << endl;
+//	for (int i=0; i<sliderCylinder.size(); i++) {
+	for (int i=0; i<sliderMin.size(); i++) {
+		mesh->addChild(sliderMin[i]);
+		mesh->addChild(sliderMax[i]);
+		mesh->addChild(sliderLine[i]);
+		mesh->addChild(sliderCylinder[i]);
+		mesh->addChild(sliderDisplay[i]);
+		mesh->addChild(sliderLabel[i]);
+	}
+	cout << "3" << endl;
+	
+	panels[6]->addChild(mesh);
 	
 }
 
@@ -1255,6 +1482,94 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
         }
         return angVel;
 //	}
+}
+
+cVector3d getDialValues()
+{
+//	double interval = 0.0075/6;
+	vector<double> dialResult;
+//	for (cShapeLine *m : dialDir) {
+	for (cMesh *m : lockDials) {
+		cVector3d pos = m->getLocalPos();
+		double px = 0.00;
+		double py = 0.01;
+		double qx = pos.y();
+		double qy = pos.z();
+		cVector3d newPos = m->getLocalRot()*cVector3d(0,0.01,0.0);
+		double rx = newPos.y();
+		double ry = newPos.z();
+		double orient = (qx*ry-qy*rx) - px*(ry-qy) + py*(rx-qx);
+//		cout << m->getLocalRot()*cVector3d(0,0.01,0)<< endl;
+//		cout << orient << endl;
+//		cout << pos << "		"	<< newPos << endl;
+//		double angle = std::acos(cDot((cVector3d(0,0.0,0.01)-pos),(newPos-pos)) / 
+//						((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length())) *360/(2*M_PI);
+		double angle = (cDot(cNormalize(cVector3d(0.0,0.01,0.0)-pos),cNormalize(newPos-pos)));// / 
+						//((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length()));
+		cout << angle << endl;
+		double ccwAngle;
+		if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
+			if (ry >0) ccwAngle = 0;
+			else ccwAngle = 180;
+		}
+		else if (orient < 0) //cout << "cw" << endl;
+			ccwAngle = 360 - angle;
+		else if (orient > 0) //cout << "ccw" << endl;
+			ccwAngle = angle;
+//		ccwAngle = ccwAngle +30;
+//		if (ccwAngle < 0) ccwAngle +=360;
+//		cout <<ccwAngle<<endl;
+		double result = (int) (ccwAngle/60);
+		dialResult.push_back(result);
+	}
+	return cVector3d(dialResult[0],dialResult[1],dialResult[2]);
+}
+
+void checkSlider(double timeInterval)
+{
+	cMesh *m;
+	if (wireID >11 && wireID <15)
+		m = sliderCylinder[wireID-12];
+	else return ;
+//	cout << (-tool->getDeviceGlobalForce()).x() << endl;
+//	double force = cClamp((cNormalize(-tool->getDeviceLocalForce()).x()-.25),-0.5,0.5);
+//	double force = cClamp((cNormalize(-contactForce).x()+.2),-0.5,0.5);
+//	double force = cNormalize(-tool->getDeviceGlobalForce()).x();
+	double force = cNormalize(-tool->getDeviceLocalForce()).x();
+//	double force = -contactForce.x();
+//	cout << (force) << endl;
+	if (abs(force) > 0) {
+
+//	cout << force << endl;
+	// move cylinder along the line according to force
+	 double K = 0.5;
+//	if (force >0) K*=-1;
+//	double pos = cClamp(sliderCylinder[wireID-12]->getLocalPos().x(), -0.006,-0.001);
+	double pos = (sliderCylinder[wireID-12]->getLocalPos().x());
+//	cout << pos << endl;
+	pos = cClamp(pos - K * timeInterval * force,-0.0065, 0.001);
+	sliderCylinder[wireID-12]->setLocalPos(pos, 
+											sliderCylinder[wireID-12]->getLocalPos().y(), 
+											sliderCylinder[wireID-12]->getLocalPos().z());
+					
+//	}
+//return cVector3d(0,0,0);
+//		cout << wireID-12<< ":"<<(sliderCylinder[wireID-12]->getLocalPos().x())+0.0065 << endl;
+			}
+}
+cVector3d getSliderValues()
+{
+//	if (wireID <=11 || wireID >=15) return;
+	double interval = 0.0075/6;
+	vector<int> sliderResult;
+	for (cMesh *m : sliderCylinder) {
+		int result = (int)(((m->getLocalPos().x())+0.0064)/interval);
+		sliderResult.push_back(result);
+	}
+	return cVector3d(sliderResult[0],sliderResult[1],sliderResult[2]);
+//	for (int r : sliderResult)
+//		cout << r;
+//	cout << endl;
 }
 
 
@@ -1471,6 +1786,9 @@ int main(int argc, char* argv[])
 	CreateBrailleTextures();
 	CreateBraillePuzzle();  
     CreateBrailleLegend();
+    
+    // Slider
+    CreateSliderPuzzle();
     
     // Buttons
 	bigbutton = new pbutton();
@@ -1799,52 +2117,26 @@ void updateHaptics(void)
 
 //        tool->setLocalPos(tool->getLocalPos());
 
-//		std::cout << wireID << std::endl;
 		world->computeGlobalPositions();
 
        //////////////////////
         // UPDATE 3D CURSOR MODEL
        //////////////////////
-        
-        tool->updateFromDevice();
+       tool->updateFromDevice();
 
        //////////////////////
         // COMPUTE FORCES
        //////////////////////
         tool->computeInteractionForces();
-
-
-/*
-	if (wireID < 0){
-//		tool->setLocalPos(position);
-//      tool->setLocalRot(rotation);
-
-//		tool->setLocalPos(position);
-//		cVector3d r0;
-//      tool->setLocalRot(bomb->getLocalRot());
-
-
-        cVector3d force(0, 0, 0);
-        cVector3d torque(0, 0, 0);
-        double gripperForce = 0.0;
-
-//		cout << "dfd" << endl;
-		force = update(bigbutton, 0.001, position);
-
-
-        // send computed force, torque, and gripper force to haptic device
-        hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
-	}
-	else {
-	*/	
-		
         tool->applyToDevice();
-//   tool->computeInteractionForces();
-//             tool->applyToDevice();
-//}
-       //////////////////////
+        
+        
        
        angVel = RotateObjectsWithDevice(angVel, timeInterval);
+       cVector3d dialValues = getDialValues();
+       cout << dialValues << endl;
+       checkSlider(timeInterval);
+//       cout << getSliderValues() << endl; 
 
         freqCounterHaptics.signal(1);
     }

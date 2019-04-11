@@ -100,7 +100,7 @@ void MyProxyAlgorithm::updateForce()
             double roughnessFactor = 5.0;
 //				contactForce = cVector3d(0,0,0);
 //            if (material->id == 7 ||material->id == 8 || contactForce.length()>0)
-            if (material->id > 6 && material->id < 12)//  || contactForce.length()>0)
+            if (material->id > 6 && material->id < 15)//  || contactForce.length()>0)
 //				contactForce = (m_deviceGlobalPos - m_proxyGlobalPos);
 				contactForce = F;
 //			else
@@ -154,7 +154,7 @@ void MyProxyAlgorithm::updateForce()
 
             // SCRATCH AND WIN
             ////////////////////////////////////////////////////////////////////////////////////////
-            if (material->id == 12)
+            if (material->id == 40)
             {   
                 cTexture1dPtr texture = c0->m_object->m_texture;
                 cTexture1dPtr roughnessMap = material->m_roughness_map;
