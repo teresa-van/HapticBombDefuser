@@ -34,7 +34,8 @@ struct particle;
 struct spring;
 struct pbutton;
 
-struct particle {
+struct particle 
+{
 	double radius;
 	double mass;
 	double damping;
@@ -46,7 +47,9 @@ struct particle {
 	cShapeSphere* sphere;
 	cMesh* msphere;
 };
-struct spring {
+
+struct spring 
+{
 	double k; // spring constant
 	double dk; // damping constant
 	double restlength;
@@ -54,12 +57,15 @@ struct spring {
 	particle *p2;
 	cShapeLine* line;
 };
-struct pbutton {
+
+struct pbutton 
+{
 	vector<particle*> particles;
 	vector<spring*> springs;
 };
 
-void makeParticle(particle *p, double r, double m, double d, cVector3d pos, bool fixed) {
+void MakeParticle(particle *p, double r, double m, double d, cVector3d pos, bool fixed) 
+{
 	p->radius = r;
 	p->mass = m;
 	p->damping = d;
@@ -70,7 +76,9 @@ void makeParticle(particle *p, double r, double m, double d, cVector3d pos, bool
 	p->sphere->setLocalPos(pos);
 	p->fixed = fixed;
 }
-void makeSpring(spring *s, double k, double d, double len, particle *a, particle *b) {
+
+void MakeSpring(spring *s, double k, double d, double len, particle *a, particle *b) 
+{
 	s->k = k;
 	s->dk = d;
 	s->restlength = len;
@@ -81,7 +89,8 @@ void makeSpring(spring *s, double k, double d, double len, particle *a, particle
 	s->line->m_pointB = s->p2->position;
 }
 
-bool checkButton(pbutton *o, double dt, int i) {
+bool CheckButton(pbutton *o, double dt, int i) 
+{
 //	cVector3d fdevice = cVector3d(0,0,0);
 	bool pressed = false;
 	for(particle *p : o->particles) {
@@ -138,19 +147,20 @@ bool checkButton(pbutton *o, double dt, int i) {
 	return pressed;
 }
 
-void makeButton(pbutton *o) {
+void MakeButton(pbutton *o) 
+{
 	particle *p0 = new particle();
-	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
+	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
 	p0->sphere->m_material->setRed();
 	o->particles.push_back(p0);
 	
 	particle *p = new particle();
-	makeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
+	MakeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
 	p->sphere->m_material->setRed();
 	o->particles.push_back(p);
 	
 	spring *s = new spring();
-	makeSpring(s, 4000, 100, 0.01, p0, p);
+	MakeSpring(s, 4000, 100, 0.01, p0, p);
 	p0->springs.push_back(s);
 	p->springs.push_back(s);
 //	o->particles[0]->springs.push_back(s);
@@ -158,7 +168,6 @@ void makeButton(pbutton *o) {
 	
 //	o->particles.push_back(p);
 	o->springs.push_back(s);
-	
 }
 
 #if(1)
@@ -607,7 +616,7 @@ void CreateWireCover()
     MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
 
-    cover->setLocalPos(cVector3d(0.0025, 0.0001, -0.0005));
+    cover->setLocalPos(cVector3d(0.0025, -0.0078, -0.0005));
     cover->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
     panels[0]->addChild(cover);
 }
@@ -622,17 +631,17 @@ void CreateWireCover()
 
 void CreateButton(pbutton *o) {
 	particle *p0 = new particle();
-	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
+	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
 	p0->sphere->m_material->setRed();
 	o->particles.push_back(p0);
 	
 	particle *p = new particle();
-	makeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
+	MakeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
 	p->sphere->m_material->setRed();
 	o->particles.push_back(p);
 	
 	spring *s = new spring();
-	makeSpring(s, 8000, 100, 0.01, p0, p);
+	MakeSpring(s, 8000, 100, 0.01, p0, p);
 	p0->springs.push_back(s);
 	p->springs.push_back(s);
 	o->springs.push_back(s);
@@ -659,7 +668,7 @@ void CreateButton(pbutton *o) {
 */
 	b->msphere = new cMesh();
 //	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
-	cCreateCylinder(b->msphere, 2*b->radius, b->radius, 10, 10, 10, true, true, b->position);
+	cCreateCylinder(b->msphere, 2*b->radius, b->radius, 20, 10, 10, true, true, b->position);
         b->msphere->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
 //        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 //	b->msphere->createBruteForceCollisionDetector();
@@ -1200,17 +1209,17 @@ void CreateLockPad(pbutton *o)
 	
 	
 	particle *p0 = new particle();
-	makeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.006, -0.007, -0.001), true);
+	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.006, -0.007, -0.001), true);
 	p0->sphere->m_material->setRed();
 	o->particles.push_back(p0);
 	
 	particle *p = new particle();
-	makeParticle(p, 0.0015, .5, 10.0, cVector3d(0.004, -0.007, -0.001), false);
+	MakeParticle(p, 0.0015, .5, 10.0, cVector3d(0.004, -0.007, -0.001), false);
 	p->sphere->m_material->setRed();
 	o->particles.push_back(p);
 	
 	spring *s = new spring();
-	makeSpring(s, 7000, 100, 0.01, p0, p);
+	MakeSpring(s, 7000, 100, 0.01, p0, p);
 	p0->springs.push_back(s);
 	p->springs.push_back(s);
 	o->springs.push_back(s);
@@ -2083,7 +2092,7 @@ void updateHaptics(void)
 //			cout << "pressed" << endl;
 //		else
 //			cout << "released" << endl;
-		bool curButton0 = checkButton(bigbutton, 0.001, 7);
+		bool curButton0 = CheckButton(bigbutton, 0.001, 7);
 		if (curButton0 != oldButton0) {
 			if (!oldButton0 && curButton0)
 				cout << "pressed\n";
@@ -2091,7 +2100,7 @@ void updateHaptics(void)
 				cout << "released\n";
 		}
 		oldButton0 = curButton0;
-		bool curButton1 = checkButton(lockbutton, 0.001, 8);
+		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
 		if (curButton1 != oldButton1) {
 			if (!oldButton1 && curButton1)
 				cout << "pressed\n";
