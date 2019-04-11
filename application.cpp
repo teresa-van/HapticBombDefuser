@@ -1153,9 +1153,10 @@ void CreateLockPad(pbutton *o)
 
 		cCreateCylinder(m, 0.0025, 0.005, 6, 5, 5, true, true);//, pos+i*gap);
 //		m->setLocalPos(cVector3d(0.02, 0.0, (pos+i*gap).z()));
-		        m->rotateAboutGlobalAxisDeg(cVector3d(0,-1,0), 90);
+		m->rotateAboutLocalAxisDeg(cVector3d(0,-1,0), 90);
+//		m->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
 		m->setLocalPos(pos+i*gap);
-		        m->rotateAboutGlobalAxisDeg(cVector3d(1,0,0), 90);
+		        
 
 		//		m->createBruteForceCollisionDetector();
 
@@ -1184,14 +1185,14 @@ void CreateLockPad(pbutton *o)
 		material->hasTexture = false;
 		material->id = 9+i;
 		
-		cShapeLine * line = new cShapeLine(cVector3d(0,0,0), cVector3d(0,1,0)*0.01);
+/*		cShapeLine * line = new cShapeLine(cVector3d(0,0,0), cVector3d(0,1,0)*0.01);
 //		line->setLocalPos(
 		line->m_colorPointA.setWhite();
 		line->m_colorPointB.setWhite();
 		
 		dialDir.push_back(line);
 		m->addChild(line);
-			
+			*/
 		lockDials.push_back(m);
 				mesh->addChild(m);
 //		bomb->addChild(m);
@@ -1280,12 +1281,8 @@ void CreateSliderPuzzle()
 
 	mesh->setUseTexture(true);
 	
-	//cout << "1" << endl;
-	
 	for (int i=0; i<3; i++)
 		CreateSlider(i);
-	//cout << "2" << endl;
-//	for (int i=0; i<sliderCylinder.size(); i++) {
 	for (int i=0; i<sliderMin.size(); i++) {
 		mesh->addChild(sliderMin[i]);
 		mesh->addChild(sliderMax[i]);
@@ -1294,8 +1291,7 @@ void CreateSliderPuzzle()
 		mesh->addChild(sliderDisplay[i]);
 		mesh->addChild(sliderLabel[i]);
 	}
-	//cout << "3" << endl;
-	
+
 	panels[6]->addChild(mesh);
 	
 }
@@ -1490,37 +1486,28 @@ cVector3d getDialValues()
 	vector<double> dialResult;
 //	for (cShapeLine *m : dialDir) {
 	for (cMesh *m : lockDials) {
-		cVector3d pos = m->getLocalPos();
-		double px = 0.00;
-		double py = 0.01;
+		cVector3d pos(0,0,0);
+		cVector3d ref = (cVector3d(0,.001,0));
+		double px = ref.y();
+		double py = ref.z();
 		double qx = pos.y();
 		double qy = pos.z();
-		cVector3d newPos = m->getLocalRot()*cVector3d(0,0.01,0.0);
+		cVector3d newPos = m->getLocalRot()*ref;
 		double rx = newPos.y();
 		double ry = newPos.z();
 		double orient = (qx*ry-qy*rx) - px*(ry-qy) + py*(rx-qx);
-//		cout << m->getLocalRot()*cVector3d(0,0.01,0)<< endl;
-//		cout << orient << endl;
-//		cout << pos << "		"	<< newPos << endl;
-//		double angle = std::acos(cDot((cVector3d(0,0.0,0.01)-pos),(newPos-pos)) / 
-//						((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length())) *360/(2*M_PI);
-		double angle = (cDot(cNormalize(cVector3d(0.0,0.01,0.0)-pos),cNormalize(newPos-pos)));// / 
-						//((cVector3d(0,0.0,0.01)-pos).length() * (newPos-pos).length()));
-		//cout << angle << endl;
+		double angle =std::acos((cDot(cNormalize(ref-pos),cNormalize(newPos-pos))))*180/M_PI;//
 		double ccwAngle;
 		if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
-			if (ry >0) ccwAngle = 0;
+			if (rx >0) ccwAngle = 0;
 			else ccwAngle = 180;
 		}
 		else if (orient < 0) //cout << "cw" << endl;
 			ccwAngle = 360 - angle;
 		else if (orient > 0) //cout << "ccw" << endl;
 			ccwAngle = angle;
-//		ccwAngle = ccwAngle +30;
-//		if (ccwAngle < 0) ccwAngle +=360;
-//		cout <<ccwAngle<<endl;
 		double result = (int) (ccwAngle/60);
-		dialResult.push_back(result);
+		dialResult.push_back(5-result);
 	}
 	return cVector3d(dialResult[0],dialResult[1],dialResult[2]);
 }
@@ -2132,7 +2119,7 @@ void updateHaptics(void)
        
        angVel = RotateObjectsWithDevice(angVel, timeInterval);
        cVector3d dialValues = getDialValues();
-       //cout << dialValues << endl;
+
        checkSlider(timeInterval);
 //       cout << getSliderValues() << endl; 
 
