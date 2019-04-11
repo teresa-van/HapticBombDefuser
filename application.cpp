@@ -631,12 +631,12 @@ void CreateWireCover()
 
 void CreateButton(pbutton *o) {
 	particle *p0 = new particle();
-	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.014, -0.00, 0.005), true);
+	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.0125, 0.0, -0.0025), true);
 	p0->sphere->m_material->setRed();
 	o->particles.push_back(p0);
 	
 	particle *p = new particle();
-	MakeParticle(p, 0.005, .5, 10.0, cVector3d(-0.004, -0.00, 0.005), false);
+	MakeParticle(p, 0.005, .5, 10.0, cVector3d(-0.0025, 0.0, -0.0025), false);
 	p->sphere->m_material->setRed();
 	o->particles.push_back(p);
 	
@@ -682,7 +682,7 @@ b->msphere->createAABBCollisionDetector(toolRadius);
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material->hasTexture = false;
 	material->id = 7;
-	bomb->addChild(b->msphere);
+	panels[1]->addChild(b->msphere);
 //	b->sphere = mesh;
 
 }
@@ -1030,7 +1030,7 @@ void CreateScratchAndWin()
 	vector<int> tempOrder = Random(4);
 
     cMesh * hint = new cMesh();
-    cCreatePlane(hint, 0.01, 0.01, cVector3d(0,0,0.00025));//cVector3d(0.0125, 0.0065, 0.005));
+    cCreatePlane(hint, 0.01, 0.01, cVector3d(-0.0001, 0, 0.00025));//cVector3d(0.0125, 0.0065, 0.005));
 
     hint->createBruteForceCollisionDetector();
     hint->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
@@ -1053,7 +1053,7 @@ void CreateScratchAndWin()
     /////////////////////////////////////////////
 
     scratchSurface = new cMesh();
-    cCreatePlane(scratchSurface, 0.01, 0.01, cVector3d(0,0,0.0005));//cVector3d(0.0125, 0.0065, 0.005));
+    cCreatePlane(scratchSurface, 0.01, 0.01, cVector3d(-0.0001, 0, 0.0005));//cVector3d(0.0125, 0.0065, 0.005));
 
     scratchSurface->createBruteForceCollisionDetector();
     scratchSurface->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
@@ -1069,7 +1069,7 @@ void CreateScratchAndWin()
 	material = std::dynamic_pointer_cast<MyMaterial>(scratchSurface->m_material);
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/scratchwin.png");
+    albedoMap->loadFromFile("textures/scratchwin2.png");
     albedoMap->setWrapModeS(GL_REPEAT); 
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
@@ -1209,12 +1209,12 @@ void CreateLockPad(pbutton *o)
 	
 	
 	particle *p0 = new particle();
-	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.006, -0.007, -0.001), true);
+	MakeParticle(p0, 0.001, 0.1, 1.0, cVector3d(-0.01, 0.0025, -0.0025), true);
 	p0->sphere->m_material->setRed();
 	o->particles.push_back(p0);
 	
 	particle *p = new particle();
-	MakeParticle(p, 0.0015, .5, 10.0, cVector3d(0.004, -0.007, -0.001), false);
+	MakeParticle(p, 0.0015, .5, 10.0, cVector3d(-0.0075, 0.0025, -0.0025), false);
 	p->sphere->m_material->setRed();
 	o->particles.push_back(p);
 	
@@ -1227,8 +1227,8 @@ void CreateLockPad(pbutton *o)
 	particle *b = o->particles[1];
 	b->msphere = new cMesh();
 //	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
-	cCreateCylinder(b->msphere, 4*b->radius, b->radius, 10, 10, 10, true, true, b->position);
-        b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+	cCreateCylinder(b->msphere, 4*b->radius, b->radius, 20, 10, 10, true, true, b->position);
+    b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
 //        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 	b->msphere->createBruteForceCollisionDetector();
     b->msphere->computeBTN();
@@ -1240,7 +1240,7 @@ void CreateLockPad(pbutton *o)
 	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material0->hasTexture = false;
 	material0->id = 8;
-	bomb->addChild(b->msphere);
+	panels[3]->addChild(b->msphere);
 	
 	panels[3]->addChild(mesh);
 //	bomb->addChild(mesh);
@@ -1422,9 +1422,9 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 {
 
 //	double timeInterval = 0.001;
-	const double INERTIA = 0.004;
-        const double MAX_ANG_VEL = 1.0;
-        const double DAMPING = 0.01;
+	const double INERTIA = 0.00001;
+        const double MAX_ANG_VEL = 5.0;
+        const double DAMPING = 1.0;
 
         // get position of cursor in global coordinates
         cVector3d toolPos = tool->getDeviceGlobalPos();
@@ -1489,7 +1489,7 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 //	}
 }
 
-cVector3d getDialValues()
+cVector3d GetDialValues()
 {
 //	double interval = 0.0075/6;
 	vector<double> dialResult;
@@ -1521,7 +1521,7 @@ cVector3d getDialValues()
 	return cVector3d(dialResult[0],dialResult[1],dialResult[2]);
 }
 
-void checkSlider(double timeInterval)
+void CheckSlider(double timeInterval)
 {
 	cMesh *m;
 	if (wireID >11 && wireID <15)
@@ -1553,7 +1553,7 @@ void checkSlider(double timeInterval)
 //		cout << wireID-12<< ":"<<(sliderCylinder[wireID-12]->getLocalPos().x())+0.0065 << endl;
 			}
 }
-cVector3d getSliderValues()
+cVector3d GetSliderValues()
 {
 //	if (wireID <=11 || wireID >=15) return;
 	double interval = 0.0075/6;
@@ -1990,7 +1990,6 @@ void updateWorkspace(cVector3d devicePosition)
 void updateHaptics(void)
 {
 	
-    cVector3d angVel(0.0, 0.0, 0.4);
 
     simulationRunning  = true;
     simulationFinished = false;
@@ -2008,6 +2007,8 @@ void updateHaptics(void)
 
     while(simulationRunning)
     {
+		cVector3d angVel(0.0, 0.0, 0.0);
+
 		/////////////////////////////////////////////////////////////////////
         // SIMULATION TIME
         /////////////////////////////////////////////////////////////////////
@@ -2127,9 +2128,9 @@ void updateHaptics(void)
         
        
        angVel = RotateObjectsWithDevice(angVel, timeInterval);
-       cVector3d dialValues = getDialValues();
+       cVector3d dialValues = GetDialValues();
 
-       checkSlider(timeInterval);
+       CheckSlider(timeInterval);
 //       cout << getSliderValues() << endl; 
 
         freqCounterHaptics.signal(1);

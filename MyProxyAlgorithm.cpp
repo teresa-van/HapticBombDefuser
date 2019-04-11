@@ -202,16 +202,16 @@ void MyProxyAlgorithm::updateForce()
                             if ((pixelX >= 0) && (pixelY >= 0) && (pixelX < texture->m_image->getWidth()) && (pixelY < texture->m_image->getHeight()))
                             {
                                 texture->m_image->setPixelColor(pixelX, pixelY, newColor);
-                                roughnessMap->m_image->setPixelColor(pixelX, pixelY, black);
                                 heightMap->m_image->setPixelColor(pixelX, pixelY, black);
+                                roughnessMap->m_image->setPixelColor(pixelX, pixelY, black);
                             }
                         }
                     }
                 }
 
                 texture->markForUpdate();
-                //heightMap->markForUpdate();
-                //roughnessMap->markForUpdate();
+                heightMap->markForUpdate();
+                roughnessMap->markForUpdate();
             }
         }
     }
