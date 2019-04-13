@@ -302,6 +302,7 @@ vector<cColorf> wireColors =
     color4,
 };
 
+
 ////////////////////////////////////////////////////////
 
 vector<cMesh*> lockDials;
@@ -313,12 +314,18 @@ vector<cShapeLine*> sliderLine;
 vector<cMesh*> sliderCylinder;
 vector<cMesh*> sliderDisplay;
 vector<cMesh*> sliderLabel;
+vector<cMesh*> sliderValue;
+int sliderMixedValues[3][6] = {{0,1,2,3,4,5},{0,1,2,3,4,5},{0,1,2,3,4,5}};
+//vector<vector<int>> sliderMixedValues;
+//int sliderOrder[3] = {0,0,0};
+
 cMultiMesh * cover;
 float coverAngle = 0;
 bool coverUnlocked = false;
 
 ////////////////////////////////////////////////////////
-
+int scratchNum[4] = {4,7,9,10};
+int scratchID = 0;
 const string scratchHintFiles[4] = 
 {
 	"scratchhint4.png",
@@ -342,7 +349,7 @@ void close(void);
 
 vector<int> Random(int n, bool dupes=false)
 {
-    srand((unsigned)time(0));
+    
 	int randomInteger;
 //	int lowest = 0;
 //	int highest = 3;
@@ -518,6 +525,8 @@ void CreateBomb()
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
     mesh->setUseTexture(true);
+    
+    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
     world->addChild(bomb);
 }
@@ -740,8 +749,8 @@ void CreateSlider(int i) {
 	
 //	cShapeLine * line = new cShapeLine(m0->getLocalPos(), m1->getLocalPos());
 	cShapeLine * line = new cShapeLine(m0, m1);
-	line->m_colorPointA.setRed();
-    line->m_colorPointB.setRed();
+	line->m_colorPointA.setBlack();
+    line->m_colorPointB.setBlack();
     line->createEffectMagnetic();
     line->m_material->setMagnetMaxDistance(0.0005);
     line->m_material->setMagnetMaxForce(0.3 * maxLinearForce);
@@ -756,7 +765,7 @@ void CreateSlider(int i) {
 //	m2->createAABBCollisionDetector(toolRadius);
 //	m2->computeBTN();
 	m2->m_material = MyMaterial::create();
-	m2->m_material->setRed();
+	m2->m_material->setGrayDarkSlate();
 	m2->m_material->setUseHapticShading(true);
 	m2->setStiffness(2000.0, true);
 	m2->m_material->setHapticTriangleSides(true, true);
@@ -771,7 +780,7 @@ void CreateSlider(int i) {
 	m3->createAABBCollisionDetector(toolRadius);
 	m3->computeBTN();
 	m3->m_material = MyMaterial::create();
-	m3->m_material->setRed();
+	m3->m_material->setBlack();
 	m3->m_material->setUseHapticShading(true);
 	m3->setStiffness(2000.0, true);
 	m3->m_material->setHapticTriangleSides(true, true);
@@ -820,6 +829,15 @@ void CreateSlider(int i) {
 	m4->setUseTexture(true);
 	
 	
+	cMesh * mv = new cMesh();
+	cCreatePlane(mv, 0.0025, 0.0045, cVector3d(0.0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+//	cCreatePlane(mv, 0.0025, 0.0045, cVector3d(0.01, 0.0045-gap, 0.001));//cVector3d(0.0125, 0.0065, 0.005));
+//	mv->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+//	mv->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+	mv->setLocalPos(0.006, 0.0045-gap, 0.002251);
+//	mv->scale(0.55);
+	mv->setUseTexture(true);
+	
 	
 	sliderMin.push_back(m0);
 	sliderMax.push_back(m1);
@@ -827,6 +845,7 @@ void CreateSlider(int i) {
 	sliderCylinder.push_back(m2);
 	sliderDisplay.push_back(m3);
 	sliderLabel.push_back(m4);
+	sliderValue.push_back(mv);
 }
 
 cVector3d panelPositions[11] = 
@@ -892,11 +911,12 @@ void CreateBrailleOrder()
 	for (int i=0; i<4; i++)
 		brailleOrder[i] = tempOrder[i];
 
-/*	for (int i=0; i<tempOrder.size(); i++) {
+/*	cout << "brialle order :";
+	for (int i=0; i<tempOrder.size(); i++) {
 		std::cout << tempOrder[i];// <<std::endl;
 	}
 	std::cout<<std::endl;
-	*/
+*/
 }
 
 void CreateBrailleTextures() 
@@ -1038,6 +1058,7 @@ void CreateScratchTextures()
 void CreateScratchAndWin()
 {
 	vector<int> tempOrder = Random(4);
+	scratchID = tempOrder[0];
 
     cMesh * hint = new cMesh();
     cCreatePlane(hint, 0.01, 0.01, cVector3d(-0.0001, 0, 0.00025));//cVector3d(0.0125, 0.0065, 0.005));
@@ -1121,12 +1142,12 @@ void CreateDialOrder()
 	vector<int> tempOrder = Random(6, true);
 	for (int i=0; i<3; i++)
 		dialOrder[i] = tempOrder[i];
-
+/*
 	for (int i=0; i<3; i++) {
 		std::cout << tempOrder[i];// <<std::endl;
 	}
 	std::cout<<std::endl;
-	
+*/	
 }
 
 void CreateDialTextures() 
@@ -1331,6 +1352,15 @@ void CreateLockPad(pbutton *o)
 	
 }
 
+void CreateSliderOrders()
+{
+	for (int i=0; i<3; i++) {
+		vector<int> tempOrder = Random(6, false);
+		for (int j=0; j<6; j++)
+			sliderMixedValues[i][j] = tempOrder[j];
+	}
+}
+
 void CreateSliderPuzzle()
 {
 	cMesh * mesh = new cMesh();
@@ -1339,18 +1369,19 @@ void CreateSliderPuzzle()
 //    mesh->createBruteForceCollisionDetector();
     mesh->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
     mesh->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
-    mesh->scale(1.5);
+    mesh->setLocalPos(0.001,0,0.0);
+    mesh->scale(1.6);
     mesh->setUseTransparency(true, true);
 	
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhite();
+    mesh->m_material->setGrayDarkSlate();
     mesh->m_material->setUseHapticShading(true);
     mesh->setStiffness(2000.0, true);
 
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->loadFromFile("textures/brailleEmpty.png");
     albedoMap->setWrapModeS(GL_REPEAT);
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
@@ -1372,7 +1403,7 @@ void CreateSliderPuzzle()
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
 
-	mesh->setUseTexture(true);
+	mesh->setUseTexture(false);
 	
 	for (int i=0; i<3; i++)
 		CreateSlider(i);
@@ -1383,6 +1414,7 @@ void CreateSliderPuzzle()
 		mesh->addChild(sliderCylinder[i]);
 		mesh->addChild(sliderDisplay[i]);
 		mesh->addChild(sliderLabel[i]);
+		mesh->addChild(sliderValue[i]);
 	}
 
 	panels[6]->addChild(mesh);
@@ -1514,20 +1546,21 @@ double getCoverAngle(cMesh *m) {
 	double ry = newPos.y();
 	double orient = (qx*ry-qy*rx) - px*(ry-qy) + py*(rx-qx);
 	double angle =std::acos((cDot(cNormalize(ref-pos),cNormalize(newPos-pos))))*180/M_PI;//
-	double ccwAngle;
-	if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
-		if (ry >0) ccwAngle = 0;
-		else ccwAngle = 180;
-	}
-	else if (orient < 0) //cout << "cw" << endl;
-		ccwAngle = 360 - angle;
-	else if (orient > 0) //cout << "ccw" << endl;
-		ccwAngle = angle;
+	double ccwAngle = 0;
+		if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
+			if (ry >0) ccwAngle = 0;
+			else ccwAngle = 180;
+		}
+		else if (orient < 0) //cout << "cw" << endl;
+			ccwAngle = 360 - angle;
+		else if (orient > 0) //cout << "ccw" << endl;
+			ccwAngle = angle;
 	return ccwAngle;
 }
 
 cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval) 
 {
+
 
 //	double timeInterval = 0.001;
 	const double INERTIA = 0.00001;
@@ -1595,7 +1628,7 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 
 			if (wireID >8 && wireID <12)
 				m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
-			else if (wireID == 15 && coverUnlocked) {
+			else if (wireID == 15 && coverUnlocked && angVel.z()!=0) {
 				if (coverAngle <=135) {
 					m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
 					coverAngle = getCoverAngle(m);
@@ -1671,12 +1704,49 @@ cVector3d GetSliderValues()
 		int result = (int)(((m->getLocalPos().x())+0.0064)/interval);
 		sliderResult.push_back(result);
 	}
+	int i=0;
+	for (cMesh *m : sliderValue) {
+		m->m_texture = numberTextures[sliderMixedValues[i][sliderResult[i]]];
+//		cout << sliderMixedValues[i][sliderResult[i]]<<endl;
+		i++;
+	}
 	return cVector3d(sliderResult[0],sliderResult[1],sliderResult[2]);
 //	for (int r : sliderResult)
 //		cout << r;
 //	cout << endl;
 }
 
+
+void printAnswers()
+{
+	cout << "wireOrder : ";
+	for (int i : brailleOrder)
+		cout << i;
+	cout << endl;
+	cout << "dialOrder : ";
+	for (int i : dialOrder)
+		cout << i;
+	cout << endl;
+	cout << "scratch : " << scratchNum[scratchID] << endl;
+	for (int i=0; i<3; i++) {
+		cout << "slider " << i << " : ";
+		for (int j : sliderMixedValues[i])
+			cout << j;
+		cout << endl;
+	}
+	cout << "tickMarks : ";
+	for (int i=0; i<3; i++) {
+		int j=0;
+		while (1) {
+			if (dialOrder[i] == sliderMixedValues[i][j]) {
+				cout<<j;
+				break;
+			}
+			j++;
+		}
+	}
+	cout << endl;
+}
 
 int main(int argc, char* argv[])
 {
@@ -1868,7 +1938,7 @@ int main(int argc, char* argv[])
     //--------------------------------------------------------------------------
     // MAIN GRAPHIC LOOP
     //--------------------------------------------------------------------------
-    
+    srand((unsigned)time(0));
 
     // Initial setup
     SetColors();
@@ -1893,6 +1963,7 @@ int main(int argc, char* argv[])
     CreateBrailleLegend();
     
     // Slider
+    CreateSliderOrders();
     CreateSliderPuzzle();
     
     // Buttons
@@ -1916,6 +1987,7 @@ int main(int argc, char* argv[])
     SetPanelPositions();
     
 //    cout << dialOrder << endl;
+    printAnswers();
     
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -2246,7 +2318,7 @@ void updateHaptics(void)
 //       cout << dialValues << endl;
 
        CheckSlider(timeInterval);
-//       cout << getSliderValues() << endl; 
+       cVector3d sliderResults =  GetSliderValues(); 
 
         freqCounterHaptics.signal(1);
     }
