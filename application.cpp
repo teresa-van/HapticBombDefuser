@@ -33,6 +33,7 @@ extern cVector3d returnForce(0,0,0);
 struct particle;
 struct spring;
 struct pbutton;
+struct cover;
 
 struct particle 
 {
@@ -132,8 +133,11 @@ bool CheckButton(pbutton *o, double dt, int i)
 //		if (pdist.length() < (p->radius+0.0005f)) { //cursor radius
 //		cout << wireID << ":" <<p->sphereForce.length() << endl;
 //		cout << wireID << ":" <<contactForce.length() << endl;
-		if ((wireID == i && contactForce.length()>19) ||p->sphereForce.length()>0) {
-			cVector3d fp = cVector3d(1,0,0)*std::min(contactForce.length(),20.0);
+		double minForce = 19;
+		if (wireID >18 && wireID < 31)
+			minForce = 13;
+		if ((wireID == i && contactForce.length()>minForce) ||p->sphereForce.length()>0) {
+			cVector3d fp = cVector3d(1,0,0)*std::min(contactForce.length(),minForce+1);
 			p->sphereForce = -fp;
 //			fdevice += fp;
 			pressed = true;
@@ -321,10 +325,27 @@ vector<cMesh*> sliderValue;
 int sliderMixedValues[3][6] = {{0,1,2,3,4,5},{0,1,2,3,4,5},{0,1,2,3,4,5}};
 //vector<vector<int>> sliderMixedValues;
 //int sliderOrder[3] = {0,0,0};
-
+/*
 cMultiMesh * cover;
 float coverAngle = 0;
 bool coverUnlocked = false;
+*/
+
+struct cover {
+	cMultiMesh * mesh;
+	float coverAngle;
+	bool coverUnlocked;
+};
+vector<cover*> covers;
+
+vector<pbutton *> numPadNumbers;
+int indexNumPadMap[12] = {	1, 2, 3, 10,
+							4, 5, 6, 11,
+							7, 8, 9, 0};
+vector<int> numPadEntry;
+int numPadPW[6] = {0,1,2,3,4,5};
+vector<cMesh*> NumScreen;
+bool correctPW = false;
 
 ////////////////////////////////////////////////////////
 int scratchNum[4] = {4,7,9,10};
@@ -529,7 +550,7 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
     
-//    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
+    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
     world->addChild(bomb);
 }
@@ -613,33 +634,46 @@ void CreateCutWires()
 
 void CreateWireCover()
 {
-    cover = new cMultiMesh();
-    cover->loadFromFile("models/wirecover.obj");
-    cover->createAABBCollisionDetector(toolRadius);
-    cover->computeBTN();
+	for (int i=0; i<4; i++) {
+		cover * c = new cover();
+		c->mesh = new cMultiMesh();
+		c->mesh->loadFromFile("models/wirecover.obj");
+		c->mesh->createAABBCollisionDetector(toolRadius);
+		c->mesh->computeBTN();
 
-    cMesh* mesh = cover->getMesh(0);
-    mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhite();
-    mesh->m_material->setUseHapticShading(true);
-    cover->setStiffness(2000.0, true);
+		cMesh* mesh = c->mesh->getMesh(0);
+		mesh->m_material = MyMaterial::create();
+		mesh->m_material->setGrayDarkSlate();
+		mesh->m_material->setUseHapticShading(true);
+		c->mesh->setStiffness(2000.0, true);
 
-    cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/wirecover.png");
-    albedoMap->setWrapModeS(GL_REPEAT);
-    albedoMap->setWrapModeT(GL_REPEAT);
-    albedoMap->setUseMipmaps(true);
-    mesh->m_texture = albedoMap;
-    mesh->setUseTexture(true);
-    mesh->setUseTransparency(true);
+		cTexture2dPtr albedoMap = cTexture2d::create();
+		albedoMap->loadFromFile("textures/wirecover.png");
+		albedoMap->setWrapModeS(GL_REPEAT);
+		albedoMap->setWrapModeT(GL_REPEAT);
+		albedoMap->setUseMipmaps(true);
+		mesh->m_texture = albedoMap;
+		mesh->setUseTexture(true);
+		mesh->setUseTransparency(false);
 
-    MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-    material->hasTexture = false;
-	material->id = 15;
-	
-    cover->setLocalPos(cVector3d(0.0025, -0.0078, -0.0005));
-    cover->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
-    panels[0]->addChild(cover);
+		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+		material->hasTexture = false;
+		material->id = 15+i;
+		
+		c->mesh->setLocalPos(cVector3d(0.0018, -0.0078, -0.0005));
+		c->mesh->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
+		
+		if (i==0) {
+			panels[0]->addChild(c->mesh);
+			mesh->setUseTransparency(true);
+		}
+		if (i==1) panels[3]->addChild(c->mesh);
+		if (i==2) panels[7]->addChild(c->mesh);
+		if (i==3) panels[10]->addChild(c->mesh);
+		c->coverAngle = 0;
+		c->coverUnlocked = false;
+		covers.push_back(c);
+	}
 }
 
 // right pos : 0.019
@@ -1009,7 +1043,7 @@ void CreateBraillePuzzle()
 		material->hasTexture = true;
 
 		mesh->setUseTexture(true);
-        panels[4]->addChild(mesh);
+        panels[3]->addChild(mesh);
         brailleLetters.push_back(mesh);
     }
 }
@@ -1364,12 +1398,116 @@ void CreateLockPad(pbutton *o)
 	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material0->hasTexture = false;
 	material0->id = 8;
-	panels[3]->addChild(b->msphere);
+	panels[4]->addChild(b->msphere);
 	
-	panels[3]->addChild(mesh);
+	panels[4]->addChild(mesh);
 //	bomb->addChild(mesh);
 	
 }
+
+void CreateNumberPad() {
+	
+	cMesh * screenblock = new cMesh();
+	cCreateBox(screenblock, 0.0095, 0.014, 0.003);
+	screenblock->setLocalPos(-0.002,0.0001,0.006);
+	screenblock->createBruteForceCollisionDetector();
+	screenblock->computeBTN();
+	screenblock->m_material = MyMaterial::create();
+	screenblock->m_material->setRed();
+	screenblock->m_material->setUseHapticShading(true);
+	screenblock->setStiffness(4000.0, true);
+	screenblock->setFriction(3.5, 1.5);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(screenblock->m_material);
+	material->hasTexture = false;
+	cVector3d start0(0.005,-0.0057,0.00);
+	cVector3d gap(0,0.0023, 0);
+	for (int i=0; i<6; i++) {
+		cMesh * md = new cMesh();
+//			cCreatePlane(mv, 0.0045, 0.0045, startPos+i*gapy+j*gapx);//cVector3d(0.0125, 0.0065, 0.005));
+		cCreatePlane(md, 0.0023, 0.003, cVector3d(0, 0, 0));
+//		md->setLocalPos(b->position + cVector3d(0.005,0,0.0));
+		md->setLocalPos(start0+gap*i);
+		md->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+		md->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
+//		md->setUseTexture(true);
+		md->m_material->setBlack();
+		md->m_texture = numberTextures[0];
+		screenblock->addChild(md);
+		NumScreen.push_back(md);
+	}
+	
+	
+	panels[9]->addChild(screenblock);
+	
+	cVector3d startPos(0.003,-0.0026,0.0011);
+	cVector3d gapx(0,0.0018,0);
+	cVector3d gapy(0,0,-0.0018);
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<4; j++) {
+			pbutton *o = new pbutton();
+			
+			particle *p0 = new particle();
+//			MakeParticle(p0, 0.001, 0.1, 1.0, startPos+i*gapy+j*gapx + cVector3d(-0.01, 0.0,0.0), true);
+			MakeParticle(p0, 0.001, 0.1, 1.0, startPos+i*gapy+j*gapx+cVector3d(-0.01, 0.00, -0.00), true);
+			p0->sphere->m_material->setRed();
+			o->particles.push_back(p0);
+			
+			particle *p = new particle();
+//			MakeParticle(p, 0.0038, .5, 10.0, startPos+i*gapy+j*gapx + cVector3d(-0.0075, 0.0, 0.0), false);
+//			MakeParticle(p, 0.0038, .5, 10.0, cVector3d(0.0, 0.0, 0.0), false);
+			MakeParticle(p, 0.0038, .5, 10.0, startPos+i*gapy+j*gapx+cVector3d(-0.0075, 0.00, -0.00), false);
+			p->sphere->m_material->setRed();
+			o->particles.push_back(p);
+			
+			spring *s = new spring();
+			MakeSpring(s, 7000, 100, 0.0095, p0, p);
+			p0->springs.push_back(s);
+			p->springs.push_back(s);
+			o->springs.push_back(s);
+			
+			particle *b = o->particles[1];
+			b->msphere = new cMesh();
+		//	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
+//			cCreateCylinder(b->msphere, 4*b->radius, b->radius, 4, 1, 1, true, true, b->position);
+			cCreateBox(b->msphere, 0.0095, 0.003, 0.003, b->position);
+//			b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+//			b->msphere->setLocalPos(startPos+i*gapy+j*gapx+b->position);
+//			b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 45);
+		//        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+			b->msphere->createBruteForceCollisionDetector();
+			b->msphere->computeBTN();
+			b->msphere->m_material = MyMaterial::create();
+			b->msphere->m_material->setRed();
+			b->msphere->m_material->setUseHapticShading(true);
+			b->msphere->setStiffness(4000.0, true);
+			b->msphere->setFriction(5, 3.5);
+			MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
+			material0->hasTexture = false;
+			material0->id = 19+i*4+j;
+			
+			
+			numPadNumbers.push_back(o);
+			
+			cMesh * mv = new cMesh();
+//			cCreatePlane(mv, 0.0045, 0.0045, startPos+i*gapy+j*gapx);//cVector3d(0.0125, 0.0065, 0.005));
+			cCreatePlane(mv, 0.003, 0.003, cVector3d(0, 0, 0));
+			mv->setLocalPos(b->position + cVector3d(0.005,0,0.0));
+			mv->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+			mv->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
+//			mv->rotateAboutLocalAxisDeg(cVector3d(0,-1,0), 90);
+////			mv->rotateAboutLocalAxisDeg(cVector3d(1,0,0), 90);
+			mv->setUseTexture(true);
+			int k = indexNumPadMap[i*4+j];
+			if (k > 10) k=10;
+			mv->m_texture = numberTextures[k]; 
+			
+			b->msphere->addChild(mv);
+			panels[9]->addChild(b->msphere);
+			
+		}
+	}
+}
+
 
 void CreateSliderOrders()
 {
@@ -1591,8 +1729,9 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 	cMesh *m;
 	if (wireID >8 && wireID <12)
 		m = lockDials[wireID-9];
-	else if (wireID == 15)
-		m = cover->getMesh(0);
+//	else if (wireID == 15)
+	else if (wireID > 14 && wireID < 19)
+		m = covers[wireID-15]->mesh->getMesh(0);
 //	else return cVector3d(0,0,0);
 	else return angVel;
 
@@ -1647,7 +1786,17 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 
 			if (wireID >8 && wireID <12)
 				m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
-			else if (wireID == 15 && coverUnlocked && angVel.z()!=0) {
+			else if (wireID > 14 && wireID < 19 && angVel.z()!=0) {
+				if (covers[wireID-15]->coverAngle <=135 && covers[wireID-15]->coverUnlocked) {
+					m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+					covers[wireID-15]->coverAngle = getCoverAngle(m);
+					if (covers[wireID-15]->coverAngle >135)  {
+						m->rotateAboutLocalAxisRad(cNormalize(-angVel), timeInterval * angVel.length());
+						covers[wireID-15]->coverAngle = getCoverAngle(m);
+					}
+				}
+			}			
+/*			else if (wireID == 15 && coverUnlocked && angVel.z()!=0) {
 				if (coverAngle <=135) {
 					m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
 					coverAngle = getCoverAngle(m);
@@ -1656,7 +1805,7 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 						coverAngle = getCoverAngle(m);
 					}
 				}
-			}			
+			}			*/
         }
         return angVel;
 //	}
@@ -1735,6 +1884,52 @@ cVector3d GetSliderValues()
 //	cout << endl;
 }
 
+void updateNumPadScreen(int i) {
+	if (i == 10 && numPadEntry.size() > 0) {
+//		NumScreen[numPadEntry.size()-1]->m_texture = numberTextures[0];
+		NumScreen[numPadEntry.size()-1]->m_material->setBlack();
+		numPadEntry.erase(numPadEntry.begin()+numPadEntry.size()-1, numPadEntry.begin()+numPadEntry.size());
+		
+	}
+	else if (i == 11) {
+		bool correct = true;
+		if (numPadEntry.size() < 6)
+			correct = false;
+		else {
+			for (int j=0; j<6; j++) {
+				if (numPadEntry[j] != numPadPW[j]) {
+					correct = false;
+					break;
+				}
+			}
+		}
+		if (correct) {
+			correctPW = true;
+			covers[2]->coverUnlocked = true;
+			for(int j=0; j<numPadEntry.size(); j++)
+//				NumScreen[j]->m_texture = numberTextures[0];
+				NumScreen[j]->m_material->setGreen();
+			cout << "access granted\n";
+		}
+		else {
+			for(int j=0; j<numPadEntry.size(); j++)
+//				NumScreen[j]->m_texture = numberTextures[0];
+				NumScreen[j]->m_material->setBlack();
+			numPadEntry.clear();
+			cout << "invalid password\n";
+		}
+	}
+	else {
+		if (numPadEntry.size()<6) {
+			numPadEntry.push_back(i);
+//			NumScreen[numPadEntry.size()-1]->m_texture = numberTextures[1];
+			NumScreen[numPadEntry.size()-1]->m_material->setWhite();
+		}
+	}
+//	for (int i: numPadEntry)
+//		cout << i;
+//	cout << endl;
+}
 
 void printAnswers()
 {
@@ -1999,6 +2194,8 @@ int main(int argc, char* argv[])
     CreateScratchTextures();
     CreateScratchAndWin();
 
+	CreateNumberPad();
+
     // End game
     CreateEndGameScreens();
 
@@ -2203,6 +2400,13 @@ void updateHaptics(void)
     
     bool oldButton0 = false;
     bool oldButton1 = false;
+//    bool oldNumButtons[9] = {	false, false, false,
+//							false, false, false,
+//							false, false, false };
+
+	vector<bool> oldNumButton;
+	for (int i=0; i<12; i++)
+		oldNumButton.push_back(false);
 
     cPrecisionClock clock;
     clock.reset();
@@ -2304,6 +2508,7 @@ void updateHaptics(void)
 			else {
 				if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
 					bigButtonIndicator->m_material->setGreen();
+					covers[3]->coverUnlocked = true;
 					bigButtonSolved = true;
 				}
 				else {
@@ -2315,20 +2520,35 @@ void updateHaptics(void)
 		if (indicatorCD == 1) {
 			bigButtonIndicator->m_material->setGrayDim();
 		}
-		
 		oldButton0 = curButton0;
+		
 		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
 		if (curButton1 != oldButton1) {
 			if (!oldButton1 && curButton1) {
 				cVector3d dialValues = GetDialValues();
 				if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
-					&& dialValues.z() == dialOrder[2] && !coverUnlocked)
-						coverUnlocked = true; 	// REMEMBER TO CHANGE
+					&& dialValues.z() == dialOrder[2] && !covers[0]->coverUnlocked)
+						covers[0]->coverUnlocked = true; 	// REMEMBER TO CHANGE
 			}
-			else
-				cout << "released\n";
+//			else
+//				cout << "released\n";
 		}
 		oldButton1 = curButton1;
+
+		for (int i=0; i<12; i++) {
+			bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
+			if (curNumButton != oldNumButton[i]) {
+				if (!oldNumButton[i] && curNumButton && !correctPW) {
+					updateNumPadScreen(indexNumPadMap[i]);
+//					cout << indexNumPadMap[i] << " pressed\n";
+				}
+//				else {
+//					cout << indexNumPadMap[i] << " released\n";
+//				}
+			}
+			oldNumButton[i] = curNumButton;
+		}
+
 
 //        tool->setLocalPos(tool->getLocalPos());
 
