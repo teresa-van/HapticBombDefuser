@@ -1530,43 +1530,26 @@ void CheckSlider(double timeInterval)
 	if (wireID >11 && wireID <15)
 		m = sliderCylinder[wireID-12];
 	else return ;
-//	cout << (-tool->getDeviceGlobalForce()).x() << endl;
-//	double force = cClamp((cNormalize(-tool->getDeviceLocalForce()).x()-.25),-0.5,0.5);
-//	double force = cClamp((cNormalize(-contactForce).x()+.2),-0.5,0.5);
-	double force = cClamp((cNormalize(-contactForce).x()),-0.5,0.5);
-//	double force = cNormalize(-tool->getDeviceGlobalForce()).x();
-//	double force = cNormalize(-tool->getDeviceLocalForce()).x();
-//	double force = -contactForce.length();
-//	double force = -contactForce.x();
-//	double force = -tool->getDeviceLocalForce().x()-contactForce.x();
-//	double force = -tool->getDeviceGlobalForce().x();
-//	double force = 0.0;
-//	cout << (force) << endl;
-	if (abs(force) > 0) {
 
-//	cout << force << endl;
-	// move cylinder along the line according to force
-	 double K = 0.5;
-//	if (force >0) K*=-1;
-//	double pos = cClamp(sliderCylinder[wireID-12]->getLocalPos().x(), -0.006,-0.001);
-	double pos = (sliderCylinder[wireID-12]->getLocalPos().x());
-//	cout << pos << endl;
-	pos = cClamp(pos - K * timeInterval * force,-0.0065, 0.001);
-	sliderCylinder[wireID-12]->setLocalPos(pos, 
-											sliderCylinder[wireID-12]->getLocalPos().y(), 
-											sliderCylinder[wireID-12]->getLocalPos().z());
-					
-//	}
-//return cVector3d(0,0,0);
-//		cout << wireID-12<< ":"<<(sliderCylinder[wireID-12]->getLocalPos().x())+0.0065 << endl;
-			}
+	double force = contactForce.y();
+	if (abs(force) > 0) 
+	{
+		// move cylinder along the line according to force
+		 double K = 0.05;
+		double pos = (sliderCylinder[wireID-12]->getLocalPos().x());
+		pos = cClamp(pos - K * timeInterval * force, -0.0065, 0.001);
+		sliderCylinder[wireID-12]->setLocalPos(pos, 
+												sliderCylinder[wireID-12]->getLocalPos().y(), 
+												sliderCylinder[wireID-12]->getLocalPos().z());
+	}
 }
 cVector3d GetSliderValues()
 {
 //	if (wireID <=11 || wireID >=15) return;
 	double interval = 0.0075/6;
 	vector<int> sliderResult;
-	for (cMesh *m : sliderCylinder) {
+	for (cMesh *m : sliderCylinder) 
+	{
 		int result = (int)(((m->getLocalPos().x())+0.0064)/interval);
 		sliderResult.push_back(result);
 	}
