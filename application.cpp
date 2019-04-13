@@ -308,6 +308,9 @@ vector<cShapeLine*> sliderLine;
 vector<cMesh*> sliderCylinder;
 vector<cMesh*> sliderDisplay;
 vector<cMesh*> sliderLabel;
+cMultiMesh * cover;
+float coverAngle = 0;
+bool coverUnlocked = false;
 
 /*vector<cShapeSphere*> sliderMax;
 vector<cShapeLine*> sliderLine;
@@ -595,7 +598,7 @@ void CreateCutWires()
 
 void CreateWireCover()
 {
-    cMultiMesh* cover = new cMultiMesh();
+    cover = new cMultiMesh();
     cover->loadFromFile("models/wirecover.obj");
     cover->createAABBCollisionDetector(toolRadius);
     cover->computeBTN();
@@ -617,7 +620,8 @@ void CreateWireCover()
 
     MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
-
+	material->id = 15;
+	
     cover->setLocalPos(cVector3d(0.0025, -0.0078, -0.0005));
     cover->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
     panels[0]->addChild(cover);
@@ -1421,6 +1425,30 @@ void UpdateTimeElapsed()
     // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
+double getCoverAngle(cMesh *m) {
+	cVector3d pos(0,0,0);
+	cVector3d ref = (cVector3d(0,.001,0));
+	double px = ref.x();
+	double py = ref.y();
+	double qx = pos.x();
+	double qy = pos.y();
+	cVector3d newPos = m->getLocalRot()*ref;
+	double rx = newPos.x();
+	double ry = newPos.y();
+	double orient = (qx*ry-qy*rx) - px*(ry-qy) + py*(rx-qx);
+	double angle =std::acos((cDot(cNormalize(ref-pos),cNormalize(newPos-pos))))*180/M_PI;//
+	double ccwAngle;
+	if (fabs(orient) < 0.00000001) {// cout << "line" << endl;
+		if (ry >0) ccwAngle = 0;
+		else ccwAngle = 180;
+	}
+	else if (orient < 0) //cout << "cw" << endl;
+		ccwAngle = 360 - angle;
+	else if (orient > 0) //cout << "ccw" << endl;
+		ccwAngle = angle;
+	return ccwAngle;
+}
+
 cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval) 
 {
 
@@ -1434,6 +1462,8 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 	cMesh *m;
 	if (wireID >8 && wireID <12)
 		m = lockDials[wireID-9];
+	else if (wireID == 15)
+		m = cover->getMesh(0);
 //	else return cVector3d(0,0,0);
 	else return angVel;
 
@@ -1486,7 +1516,19 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
             angVel.x(0.0);
             angVel.y(0.0);
 
-            m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+			if (wireID >8 && wireID <12)
+				m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+			else if (wireID == 15 && coverUnlocked) {
+				if (coverAngle <=135) {
+					m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
+					coverAngle = getCoverAngle(m);
+					if (coverAngle >135)  {
+						m->rotateAboutLocalAxisRad(cNormalize(-angVel), timeInterval * angVel.length());
+						coverAngle = getCoverAngle(m);
+					}
+				}
+				cout << coverAngle << endl;
+			}			
         }
         return angVel;
 //	}
@@ -2093,7 +2135,7 @@ void updateHaptics(void)
 		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
 		if (curButton1 != oldButton1) {
 			if (!oldButton1 && curButton1)
-				cout << "pressed\n";
+				coverUnlocked = !coverUnlocked; 	// REMEMBER TO CHANGE
 			else
 				cout << "released\n";
 		}
