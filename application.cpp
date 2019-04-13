@@ -242,6 +242,18 @@ const string numberTextureFiles[11] =
 vector<cMesh*> timerNumbers;
 double startTime;
 
+int dialOrder[3] = {0, 0, 0}; // will be randomized
+vector<cTexture2dPtr> numberDialTextures;
+const string numberDialTextureFiles[6] =
+{
+	"dial0.png",
+	"dial1.png",
+	"dial2.png",
+	"dial3.png",
+	"dial4.png",
+	"dial5.png"
+};
+
 ///////////////////////////////////////////////////
 
 int brailleOrder[4] = {3, 1, 2, 0}; // will be modified later on
@@ -294,14 +306,7 @@ vector<cColorf> wireColors =
 
 vector<cMesh*> lockDials;
 vector<cShapeLine*> dialDir;
-/*
-vector<cShapeSphere*> sliderMin;
-vector<cShapeSphere*> sliderMax;
-vector<cShapeLine*> sliderLine;
-vector<cShapeCylinder*> sliderCylinder;
-vector<cMesh*> sliderLabel;
-vector<cShapeBox*>	sliderDisplay;
-*/
+
 vector<cMesh*> sliderMin;
 vector<cMesh*> sliderMax;
 vector<cShapeLine*> sliderLine;
@@ -312,12 +317,6 @@ cMultiMesh * cover;
 float coverAngle = 0;
 bool coverUnlocked = false;
 
-/*vector<cShapeSphere*> sliderMax;
-vector<cShapeLine*> sliderLine;
-vector<cShapeCylinder*> sliderCylinder;
-vector<cMesh*> sliderLabel;
-vector<cShapeBox*>	sliderDisplay;
-*/
 ////////////////////////////////////////////////////////
 
 const string scratchHintFiles[4] = 
@@ -341,7 +340,7 @@ void updateGraphics(void);
 void updateHaptics(void);
 void close(void);
 
-vector<int> Random(int n)
+vector<int> Random(int n, bool dupes=false)
 {
     srand((unsigned)time(0));
 	int randomInteger;
@@ -351,8 +350,14 @@ vector<int> Random(int n)
 	vector<int> tempOrder;
 	while (tempOrder.size() < n) {
 		randomInteger = (int)(((float)rand()/(float)(RAND_MAX))*10);
-		if (randomInteger < n && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
-			tempOrder.push_back(randomInteger);
+		if (dupes) {
+			if (randomInteger < n)
+				tempOrder.push_back(randomInteger);
+		}
+		else {
+			if (randomInteger < n && find(tempOrder.begin(), tempOrder.end(), randomInteger) == tempOrder.end())
+				tempOrder.push_back(randomInteger);
+		}
 	}
     return tempOrder;
 }
@@ -513,8 +518,6 @@ void CreateBomb()
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
     mesh->setUseTexture(true);
-
-	bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 180);
 
     world->addChild(bomb);
 }
@@ -1112,6 +1115,35 @@ void CreateScratchAndWin()
 	panels[2]->addChild(scratchSurface);
 }
 
+
+void CreateDialOrder() 
+{
+	vector<int> tempOrder = Random(6, true);
+	for (int i=0; i<3; i++)
+		dialOrder[i] = tempOrder[i];
+
+	for (int i=0; i<3; i++) {
+		std::cout << tempOrder[i];// <<std::endl;
+	}
+	std::cout<<std::endl;
+	
+}
+
+void CreateDialTextures() 
+{
+//    for (string s : brailleTextureFiles)
+    for (int i=0; i<6; i++)
+    {
+        cTexture2dPtr tex = cTexture2d::create();
+        tex->loadFromFile("textures/" + numberDialTextureFiles[i]);
+        tex->setWrapModeS(GL_REPEAT);
+        tex->setWrapModeT(GL_REPEAT);
+        tex->setUseMipmaps(true);
+        numberDialTextures.push_back(tex);
+    }
+
+}
+
 void CreateLockPad(pbutton *o)
 {
 		cMesh * mesh = new cMesh();
@@ -1170,7 +1202,7 @@ void CreateLockPad(pbutton *o)
 		cCreateCylinder(m, 0.0025, 0.005, 6, 5, 5, true, true);//, pos+i*gap);
 //		m->setLocalPos(cVector3d(0.02, 0.0, (pos+i*gap).z()));
 		m->rotateAboutLocalAxisDeg(cVector3d(0,-1,0), 90);
-//		m->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
+		m->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 210);
 		m->setLocalPos(pos+i*gap);
 		        
 
@@ -1192,7 +1224,7 @@ void CreateLockPad(pbutton *o)
 		m->createAABBCollisionDetector(toolRadius);
 		m->computeBTN();
 		m->m_material = MyMaterial::create();
-		m->m_material->setRed();
+		m->m_material->setBrownGoldenrod();
 		m->m_material->setUseHapticShading(true);
 		m->setStiffness(1000.0, true);
 		m->m_material->setHapticTriangleSides(true, true);
@@ -1201,14 +1233,59 @@ void CreateLockPad(pbutton *o)
 		material->hasTexture = false;
 		material->id = 9+i;
 		
-/*		cShapeLine * line = new cShapeLine(cVector3d(0,0,0), cVector3d(0,1,0)*0.01);
-//		line->setLocalPos(
-		line->m_colorPointA.setWhite();
-		line->m_colorPointB.setWhite();
+		for (int j=0; j<6; j++) {
+			double angle = 60*(j+1);
+			cMesh * md = new cMesh();
+			cCreatePlane(md, 0.01, 0.005, cVector3d(0.0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+			md->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
+			md->rotateAboutLocalAxisDeg(cVector3d(0,-1,0), 90);
+			md->rotateAboutLocalAxisDeg(cVector3d(1, 0, 0), angle);			
+			md->rotateAboutLocalAxisDeg(cVector3d(-1, 0, 0), 30);
+			
+			md->setLocalPos(md->getLocalRot()*cVector3d(0.00125,-0.00435,0));
+			md->rotateAboutLocalAxisDeg(cVector3d(1, 0, 0), 90);	
+			md->rotateAboutLocalAxisDeg(cVector3d(0, 0, -1), 90);	
+			md->scale(0.5);
+
+			md->setUseTransparency(true, true);
+			
+			md->m_material = MyMaterial::create();
+			md->m_material->setWhite();
+			md->m_material->setUseHapticShading(true);
+			md->setStiffness(2000.0, true);
+
+			MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(md->m_material);
+
+/*			cTexture2dPtr albedoMap = cTexture2d::create();
+			albedoMap->loadFromFile("textures/"+);
+			albedoMap->setWrapModeS(GL_REPEAT);
+			albedoMap->setWrapModeT(GL_REPEAT);
+			albedoMap->setUseMipmaps(true);
+*/
+			cTexture2dPtr heightMap = cTexture2d::create();
+			heightMap->loadFromFile("textures/brailleEmpty.png");
+			heightMap->setWrapModeS(GL_REPEAT);
+			heightMap->setWrapModeT(GL_REPEAT);
+			heightMap->setUseMipmaps(true);
+
+			cTexture2dPtr roughnessMap = cTexture2d::create();
+			roughnessMap->loadFromFile("textures/brailleEmpty.png");
+			roughnessMap->setWrapModeS(GL_REPEAT);
+			roughnessMap->setWrapModeT(GL_REPEAT);
+			roughnessMap->setUseMipmaps(true);
+
+			md->m_texture = numberDialTextures[j];
+			material->m_height_map = heightMap;
+			material->m_roughness_map = roughnessMap;
+			material->hasTexture = true;
+			material->id = 9+i;
+
+			md->setUseTexture(true);
+			m->addChild(md);
+			
+			
+		}
 		
-		dialDir.push_back(line);
-		m->addChild(line);
-			*/
 		lockDials.push_back(m);
 				mesh->addChild(m);
 //		bomb->addChild(m);
@@ -1527,7 +1604,6 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 						coverAngle = getCoverAngle(m);
 					}
 				}
-				cout << coverAngle << endl;
 			}			
         }
         return angVel;
@@ -1824,6 +1900,9 @@ int main(int argc, char* argv[])
 //	makeButton(bigbutton);
 	CreateButton(bigbutton);
     lockbutton = new pbutton();
+    
+    CreateDialOrder();
+    CreateDialTextures();
     CreateLockPad(lockbutton);
 
     // Scratch and Win
@@ -1836,7 +1915,7 @@ int main(int argc, char* argv[])
     // After setup
     SetPanelPositions();
     
-    
+//    cout << dialOrder << endl;
     
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -2134,8 +2213,12 @@ void updateHaptics(void)
 		oldButton0 = curButton0;
 		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
 		if (curButton1 != oldButton1) {
-			if (!oldButton1 && curButton1)
-				coverUnlocked = !coverUnlocked; 	// REMEMBER TO CHANGE
+			if (!oldButton1 && curButton1) {
+				cVector3d dialValues = GetDialValues();
+				if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
+					&& dialValues.z() == dialOrder[2] && !coverUnlocked)
+						coverUnlocked = true; 	// REMEMBER TO CHANGE
+			}
 			else
 				cout << "released\n";
 		}
@@ -2159,7 +2242,8 @@ void updateHaptics(void)
         
        
        angVel = RotateObjectsWithDevice(angVel, timeInterval);
-       cVector3d dialValues = GetDialValues();
+       
+//       cout << dialValues << endl;
 
        CheckSlider(timeInterval);
 //       cout << getSliderValues() << endl; 
