@@ -216,6 +216,9 @@ vector<cMultiMesh*> panels;
 bool gameOver = false;
 
 pbutton *bigbutton;
+cMesh *bigButtonIndicator;
+int indicatorCD = 0;
+bool bigButtonSolved = false;
 pbutton *lockbutton;
 
 ///////////////////////////////////////////////////
@@ -526,7 +529,7 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
     
-    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
+//    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
     world->addChild(bomb);
 }
@@ -700,7 +703,23 @@ b->msphere->createAABBCollisionDetector(toolRadius);
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material->hasTexture = false;
 	material->id = 7;
+
+    bigButtonIndicator = new cMesh();
+    cCreateSphere(bigButtonIndicator, 0.002, 10, 5);
+	bigButtonIndicator->setLocalPos(0.0005, 0.006, 0.006);
+//	m0->createBruteForceCollisionDetector();
+	bigButtonIndicator->createAABBCollisionDetector(toolRadius);
+	bigButtonIndicator->computeBTN();
+	bigButtonIndicator->m_material = MyMaterial::create();
+	bigButtonIndicator->m_material->setGrayDim();
+	bigButtonIndicator->m_material->setUseHapticShading(true);
+	bigButtonIndicator->setStiffness(800.0, true);
+	bigButtonIndicator->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(bigButtonIndicator->m_material);
+	material0->hasTexture = false;
+
 	panels[1]->addChild(b->msphere);
+	panels[1]->addChild(bigButtonIndicator);
 //	b->sphere = mesh;
 
 }
@@ -2016,6 +2035,8 @@ int main(int argc, char* argv[])
                 UpdateTimeElapsed();
                 UpdateTimer();
                 startTime = previousTime;
+                if (indicatorCD > 0) 
+					indicatorCD--;
             }
         }
 
@@ -2276,12 +2297,25 @@ void updateHaptics(void)
 //		else
 //			cout << "released" << endl;
 		bool curButton0 = CheckButton(bigbutton, 0.001, 7);
-		if (curButton0 != oldButton0) {
-			if (!oldButton0 && curButton0)
-				cout << "pressed\n";
-			else
-				cout << "released\n";
+		if (curButton0 != oldButton0 && !bigButtonSolved) {
+			if (!oldButton0 && curButton0) {
+				bigButtonIndicator->m_material->setYellow();
+			}
+			else {
+				if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
+					bigButtonIndicator->m_material->setGreen();
+					bigButtonSolved = true;
+				}
+				else {
+					bigButtonIndicator->m_material->setRed();
+					indicatorCD = 3;
+				}
+			}
 		}
+		if (indicatorCD == 1) {
+			bigButtonIndicator->m_material->setGrayDim();
+		}
+		
 		oldButton0 = curButton0;
 		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
 		if (curButton1 != oldButton1) {
