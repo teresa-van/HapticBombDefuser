@@ -26,6 +26,8 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+bool gameStarted = false;
+
 extern int wireID = 6;
 extern cVector3d contactForce(0,0,0);
 extern cVector3d returnForce(0,0,0);
@@ -211,6 +213,7 @@ cVector3d toolInitPos(0.0,0.0,0.01);
 ///////////////////////////////////////////////////
 
 cMultiMesh* bomb;
+cMesh * startScreen;
 cMesh * deathScreen;
 cMesh * winScreen;
 cMesh * background;
@@ -397,6 +400,8 @@ vector<int> occupiedPanels;
 int panelOrderBigButtonValues[3] = {1,2,4};
 int panelOrderCluesValues[4] = {0,3,7,10};
 int panelOrderPuzzlesValues[4] = {5,6,8,9};
+
+vector<cMesh*> slidingPictures;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -504,6 +509,25 @@ void GameOver(bool win)
         world->addChild(winScreen);
     else
         world->addChild(deathScreen);
+}
+
+void CreateStartScreen()
+{
+    startScreen = new cMesh();
+    cCreatePlane(startScreen, 0.15, 0.1, cVector3d(0, -0.001, 0.03));
+    startScreen->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+    startScreen->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
+
+    cTexture2dPtr albedoMap = cTexture2d::create();
+    albedoMap->loadFromFile("textures/deathscreen.png");
+    albedoMap->setWrapModeS(GL_REPEAT);
+    albedoMap->setWrapModeT(GL_REPEAT);
+    albedoMap->setUseMipmaps(true);
+    startScreen->m_texture = albedoMap;
+    startScreen->setUseTexture(true);
+	startScreen->setUseTransparency(true, true);
+	
+	world->addChild(startScreen);
 }
 
 void CreateEndGameScreens()
@@ -674,9 +698,9 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
     
-//    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
+    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
-    world->addChild(bomb);
+//    world->addChild(bomb);
 }
 
 void CreateWires()
@@ -1058,6 +1082,75 @@ void SetPanelPositions()
 }
 
 
+void CreatePicturePuzzle()
+{
+	cMesh * mesh = new cMesh();
+	cCreatePlane(mesh, 0.0145, 0.0145, cVector3d(0, 0, 0));
+	mesh->setLocalPos(cVector3d(0.001,0,0));
+	mesh->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+	mesh->m_material->setBlack();
+	
+	cVector3d startPos(-0.0048, -0.0048,0.001);
+	cVector3d gapx(0,0.0048,0);
+	cVector3d gapy(0.0048,0,0);
+	for (int i=0; i<3; i++) {
+		vector<cMesh*> tempVector;
+		for (int j=0; j<3; j++) {
+			cMesh * bg = new cMesh();
+			cCreatePlane(bg, 0.0044, 0.0044,startPos+i*gapy+j*gapx);
+			if (i<2)
+				bg->m_material->setWhite();
+			else
+				bg->m_material->setGray();
+				
+			mesh->addChild(bg);
+			
+			cMesh * mv = new cMesh();
+			cCreatePlane(mv, 0.0041, 0.0041,startPos+i*gapy+j*gapx + cVector3d(0,0,0.0001));
+			mv->m_material->setRed();
+			
+			cMesh * mv0 = new cMesh();
+			cCreatePlane(mv0, 0.0041, 0.0041,startPos+i*gapy+j*gapx + cVector3d(0,0,0.0001));
+			mv0->m_material->setWhite();
+
+
+			mv0->setUseTransparency(true, true);
+//		    mv0->createBruteForceCollisionDetector();
+
+			mv0->createAABBCollisionDetector(toolRadius);
+			mv0->computeBTN();
+		
+			mv0->m_material = MyMaterial::create();
+			mv0->m_material->setWhite();
+			mv0->m_material->setUseHapticShading(true);
+			mv0->setStiffness(2000.0, true);
+			mv0->setFriction(3.5, 1.5);
+
+			MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mv0->m_material);
+
+			mv0->m_texture = numberTextures[i*3+j];
+			material->hasTexture = false;
+			material->id = 31+i*3+j;
+
+			mv0->setUseTexture(true);
+
+			mv0->addChild(mv);
+			mesh->addChild(mv0);
+
+			slidingPictures.push_back(mv0);
+//			tempVector.push_back(mv);
+
+
+		}
+//		cells.push_back(tempVector);
+	}
+	
+//	Cover * cover = CreateCover();
+//	panels[occupiedPanels[8]]->addChild(cover->mesh);
+	panels[occupiedPanels[8]]->addChild(mesh);
+	
+}
+
 void CreateBrailleOrder() 
 {
 	vector<int> tempOrder = Random(4);
@@ -1279,7 +1372,7 @@ void CreateScratchAndWin()
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
-    material->id = 40;
+    material->id = 41;
 
 	scratchSurface->setUseTexture(true);
 
@@ -2021,6 +2114,55 @@ void updateNumPadScreen(int i) {
 //	cout << endl;
 }
 
+double xmin[9] = {	0, -0.0048, -0.0096,
+					0, -0.0048, -0.0096,
+					0, -0.0048, -0.0096};
+double xmax[9] = {	0.0096, 0.0048, 0,
+					0.0096, 0.0048, 0,
+					0.0096, 0.0048, 0};
+								
+double ymin[9] = {	-0.0096, -0.0096, -0.0096,
+					-0.0046, -0.0048, -0.0048,
+					0, 0, 0};
+double ymax[9] = {	0, 0, 0,
+					0.0046, 0.0048, 0.0048,
+					0.0096, 0.0096, 0.0096};
+
+								
+void updateSlidingPictures(double timeInterval)
+{
+	cMesh *m;
+	if (wireID>30 && wireID<41) m = slidingPictures[wireID-31];
+	else return;
+	// cf.x = z cf.y = x cf.z = y
+	if (fabs(contactForce.x()) > 0.2) {
+//		double px = cClamp(xmin[wireID-31], xmax[wireID-31], m->getLocalPos().x() + contactForce.z() * 0.00001);
+//		double py = cClamp(ymin[wireID-31], ymax[wireID-31], m->getLocalPos().y() - contactForce.y() * 0.00001);
+//		double pz = m->getLocalPos().z();
+		double px = m->getLocalPos().x() + contactForce.z() * 0.0001;
+		double py = m->getLocalPos().y() - contactForce.y() * 0.0001;
+		double pz = m->getLocalPos().z();
+		
+		if (px <= ymin[wireID-31]*1.5 && px >= ymax[wireID-31]*1.5) {
+			px =0;
+		}
+//		if (py <= xmin[wireID-31] && py >= xmax[wireID-31]) {
+//			py = 0;
+//		}
+		
+			
+		cVector3d p(px,py,pz);
+		
+//		cGenericObject *m0 = m->getParent();
+//		m0->removeChild(m);
+//		cout << m->getGlobalPos() << endl;
+//		m0->addChild(m);
+		m->setLocalPos(p);
+//		cVector3d p = m->getLocalPos()+cVector3d(contactForce.z(),-contactForce.y(),contactForce.x()*0)*0.00001
+//		m->setLocalPos(m->getLocalPos()+cVector3d(contactForce.z(),-contactForce.y(),contactForce.x()*0)*0.00001);
+	}
+}
+
 void printAnswers()
 {
 	cout << "wireOrder : ";
@@ -2222,6 +2364,8 @@ int main(int argc, char* argv[])
     tool->enableDynamicObjects(true);	//seemed to help for vel to angvel objects
     tool->setWaitForSmallForce(true);
     tool->start();
+    
+    tool->setForcesOFF();
 
     //--------------------------------------------------------------------------
     // WIDGETS
@@ -2253,7 +2397,7 @@ int main(int argc, char* argv[])
 	for (int i=0; i<11; i++)
 		occupiedPanels.push_back(i);
 	
-	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
+//	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
 
     // Wires
     CreateWires();
@@ -2293,9 +2437,12 @@ int main(int argc, char* argv[])
 	CreateGridClue();
 	FillGridColors();
 	
+	CreatePicturePuzzle();
+	
 	for (cMesh * c : sliderCylinder)
 		setCellColor(c, randomColor);
 
+	CreateStartScreen();
     // End game
     CreateEndGameScreens();
 
@@ -2322,7 +2469,7 @@ int main(int argc, char* argv[])
 
     while (!glfwWindowShouldClose(window))
     {
-        if (!gameOver)
+        if (!gameOver && gameStarted)
         {
             double previousTime = clock.getCPUTimeSeconds();
             double deltaTime = previousTime - startTime;
@@ -2552,125 +2699,137 @@ void updateHaptics(void)
         if (middle) midPressed = true;
         if (left) leftPressed = true;
         if (right) rightPressed = true;
-
-        if (midPressed && !middle)
-        {
-			if (wireID >=0 && wireID <4) {// && !middle) {
-//				std::cout << "cut wire: " << wireID << std::endl;
-				cGenericObject * parent = wires[wireID]->getParent();
-				parent->removeChild(wires[wireID]);
-                parent->addChild(cutWires[wireID]);
-                if (wireID == brailleOrder[wireSequence])
-					wireSequence++;
-				else
-                    GameOver(false);
-
-                if (wireSequence >= 4)
-                    GameOver(true);
+        if (!gameStarted) {
+			if (midPressed && !middle) {
+				// remove some start screen
+				world->removeChild(startScreen);
+				world->addChild(bomb);
+				tool->setForcesON();
+				gameStarted = true;
 			}
-			midPressed = false;
-//			middle = false;
-			
-        }
-        if (leftPressed)// && !left)
-        {
-            world->computeGlobalPositions();
-            tool->updateFromDevice();
-            tool->computeInteractionForces();
-            tool->applyToDevice();
-            
-			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
-			leftPressed = false;
-        }
-        if (rightPressed)// && !right)
-        {
-            world->computeGlobalPositions();
-            tool->updateFromDevice();
-            tool->computeInteractionForces();
-            tool->applyToDevice();
-
-			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
-			rightPressed = false;
-        }
-
-		if (right || left) {
-			// no button calculations
 		}
 		else {
-			bool curButton0 = CheckButton(bigbutton, 0.001, 7);
-			if (curButton0 != oldButton0 && !bigButtonSolved) {
-				if (!oldButton0 && curButton0) {
-					bigButtonIndicator->m_material->setYellow();
+
+			if (midPressed && !middle)
+			{
+				if (wireID >=0 && wireID <4) {// && !middle) {
+	//				std::cout << "cut wire: " << wireID << std::endl;
+					cGenericObject * parent = wires[wireID]->getParent();
+					parent->removeChild(wires[wireID]);
+					parent->addChild(cutWires[wireID]);
+					if (wireID == brailleOrder[wireSequence])
+						wireSequence++;
+					else
+						GameOver(false);
+
+					if (wireSequence >= 4)
+						GameOver(true);
 				}
-				else {
-					if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
-						bigButtonIndicator->m_material->setGreen();
-						covers[3]->coverUnlocked = true;
-						bigButtonSolved = true;
+				midPressed = false;
+	//			middle = false;
+				
+			}
+			if (leftPressed)// && !left)
+			{
+				world->computeGlobalPositions();
+				tool->updateFromDevice();
+				tool->computeInteractionForces();
+				tool->applyToDevice();
+				
+				bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), 0.25);
+				leftPressed = false;
+			}
+			if (rightPressed)// && !right)
+			{
+				world->computeGlobalPositions();
+				tool->updateFromDevice();
+				tool->computeInteractionForces();
+				tool->applyToDevice();
+
+				bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
+				rightPressed = false;
+			}
+
+			if (right || left) {
+				// no button calculations
+			}
+			else {
+				bool curButton0 = CheckButton(bigbutton, 0.001, 7);
+				if (curButton0 != oldButton0 && !bigButtonSolved) {
+					if (!oldButton0 && curButton0) {
+						bigButtonIndicator->m_material->setYellow();
 					}
 					else {
-						bigButtonIndicator->m_material->setRed();
-						indicatorCD = 3;
+						if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
+							bigButtonIndicator->m_material->setGreen();
+							covers[3]->coverUnlocked = true;
+							bigButtonSolved = true;
+						}
+						else {
+							bigButtonIndicator->m_material->setRed();
+							indicatorCD = 3;
+						}
 					}
 				}
+				if (indicatorCD == 1) {
+					bigButtonIndicator->m_material->setGrayDim();
+				}
+				oldButton0 = curButton0;
+				
+				bool curButton1 = CheckButton(lockbutton, 0.001, 8);
+				if (curButton1 != oldButton1) {
+					if (!oldButton1 && curButton1) {
+						cVector3d dialValues = GetDialValues();
+						if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
+							&& dialValues.z() == dialOrder[2] && !covers[1]->coverUnlocked)
+								covers[1]->coverUnlocked = true; 	// REMEMBER TO CHANGE
+					}
+		//			else
+		//				cout << "released\n";
+				}
+				oldButton1 = curButton1;
+
+				for (int i=0; i<12; i++) {
+					bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
+					if (curNumButton != oldNumButton[i]) {
+						if (!oldNumButton[i] && curNumButton && !correctPW) {
+							updateNumPadScreen(indexNumPadMap[i]);
+		//					cout << indexNumPadMap[i] << " pressed\n";
+						}
+		//				else {
+		//					cout << indexNumPadMap[i] << " released\n";
+		//				}
+					}
+					oldNumButton[i] = curNumButton;
+				}
 			}
-			if (indicatorCD == 1) {
-				bigButtonIndicator->m_material->setGrayDim();
-			}
-			oldButton0 = curButton0;
+
+
+	//        tool->setLocalPos(tool->getLocalPos());
+
+			world->computeGlobalPositions();
+
+		   //////////////////////
+			// UPDATE 3D CURSOR MODEL
+		   //////////////////////
+		   tool->updateFromDevice();
+
+		   //////////////////////
+			// COMPUTE FORCES
+		   //////////////////////
+			tool->computeInteractionForces();
+			tool->applyToDevice();
 			
-			bool curButton1 = CheckButton(lockbutton, 0.001, 8);
-			if (curButton1 != oldButton1) {
-				if (!oldButton1 && curButton1) {
-					cVector3d dialValues = GetDialValues();
-					if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
-						&& dialValues.z() == dialOrder[2] && !covers[1]->coverUnlocked)
-							covers[1]->coverUnlocked = true; 	// REMEMBER TO CHANGE
-				}
-	//			else
-	//				cout << "released\n";
-			}
-			oldButton1 = curButton1;
+			
+		   
+		   angVel = RotateObjectsWithDevice(angVel, timeInterval);
+		   
+	//       cout << dialValues << endl;
 
-			for (int i=0; i<12; i++) {
-				bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
-				if (curNumButton != oldNumButton[i]) {
-					if (!oldNumButton[i] && curNumButton && !correctPW) {
-						updateNumPadScreen(indexNumPadMap[i]);
-	//					cout << indexNumPadMap[i] << " pressed\n";
-					}
-	//				else {
-	//					cout << indexNumPadMap[i] << " released\n";
-	//				}
-				}
-				oldNumButton[i] = curNumButton;
-			}
-		}
-
-
-//        tool->setLocalPos(tool->getLocalPos());
-
-		world->computeGlobalPositions();
-
-       //////////////////////
-        // UPDATE 3D CURSOR MODEL
-       //////////////////////
-       tool->updateFromDevice();
-
-       //////////////////////
-        // COMPUTE FORCES
-       //////////////////////
-        tool->computeInteractionForces();
-        tool->applyToDevice();
-        
-        
-       
-       angVel = RotateObjectsWithDevice(angVel, timeInterval);
-       
-//       cout << dialValues << endl;
-
-       CheckSlider(timeInterval);
-       cVector3d sliderResults =  GetSliderValues(); 
+		   CheckSlider(timeInterval);
+		   cVector3d sliderResults =  GetSliderValues(); 
+		   updateSlidingPictures(timeInterval);
+	   }
 
         freqCounterHaptics.signal(1);
     }
