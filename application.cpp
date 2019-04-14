@@ -1148,7 +1148,6 @@ void CreatePanels()
         bomb->addChild(panel);
         panels.push_back(panel);
     }
-    
 }
 
 void SetPanelPositions()
