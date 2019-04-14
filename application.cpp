@@ -924,6 +924,7 @@ void CreateSlider(int i) {
 //	m2->createAABBCollisionDetector(toolRadius);
 //	m2->computeBTN();
 	m2->m_material = MyMaterial::create();
+//	setCellColor(m2, randomColor);
 	m2->m_material->setGrayDarkSlate();
 	m2->m_material->setUseHapticShading(true);
 	m2->setStiffness(2000.0, true);
@@ -2272,6 +2273,7 @@ int main(int argc, char* argv[])
 	CreateBraillePuzzle();  
     CreateBrailleLegend();
     
+
     // Slider
     CreateSliderOrders();
     CreateSliderPuzzle();
@@ -2291,9 +2293,12 @@ int main(int argc, char* argv[])
     CreateScratchAndWin();
 
 	CreateNumberPad();
-
 	CreateGridClue();
 	FillGridColors();
+	
+	for (cMesh * c : sliderCylinder)
+		setCellColor(c, randomColor);
+
     // End game
     CreateEndGameScreens();
 
