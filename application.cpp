@@ -471,6 +471,8 @@ int panelOrderCluesValues[4] = {0,3,7,10};
 int panelOrderPuzzlesValues[4] = {5,6,8,9};
 
 vector<cMesh*> slidingPictures;
+vector<pbutton*> colorButtons;
+vector<bool> colorLights;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -594,8 +596,8 @@ void CreateStartScreen()
     startScreen->m_texture = albedoMap;
     startScreen->setUseTexture(true);
 	startScreen->setUseTransparency(true, true);
-	
-	world->addChild(startScreen);
+	if (!gameStarted)
+		world->addChild(startScreen);
 }
 
 void CreateEndGameScreens()
@@ -697,7 +699,7 @@ Cover * CreateCover()
 
 	cMesh* mesh = c->mesh->getMesh(0);
 	mesh->m_material = MyMaterial::create();
-	mesh->m_material->setColor(cColorf(0.2, 0.2, 0.2));
+	mesh->m_material->setColorf(0.2, 0.2, 0.2);
 	mesh->m_material->setUseHapticShading(true);
 	c->mesh->setStiffness(2000.0, true);
 
@@ -766,7 +768,8 @@ void CreateBomb()
     
     bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
-//    world->addChild(bomb);
+	if (gameStarted)
+		world->addChild(bomb);
 }
 
 void CreateWires()
@@ -885,7 +888,7 @@ void CreateGridClue()
 	
 	cMesh* mesh = screen->getMesh(0);
 	mesh->m_material = MyMaterial::create();
-	mesh->m_material->setColor(cColorf(0.2, 0.2, 0.2));
+	mesh->m_material->setColorf(0.2, 0.2, 0.2);
 	mesh->m_material->setUseHapticShading(true);
 
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
@@ -1872,6 +1875,72 @@ void CreateOtherTextures()
 	}
 }
 
+void CreateSimonSaysPuzzle()
+{
+	cMesh * edge = new cMesh();
+	cCreateCylinder(edge, 0.001, 0.007, 4, 1, 1, true, true);
+	edge->setLocalPos(0.0001,0.0001,0.00);
+	edge->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+	
+	edge->createBruteForceCollisionDetector();
+	edge->computeBTN();
+	edge->m_material = MyMaterial::create();
+	edge->m_material->setBlack();
+	edge->m_material->setUseHapticShading(true);
+	edge->setStiffness(4000.0, true);
+//	edge->setFriction(3.5, 1.5);
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(edge->m_material);
+	material->hasTexture = false;
+	
+	cVector3d start0[4] = {	cVector3d(-0.0032,0,-0.001),
+							cVector3d(0,-0.0032,-0.001),
+							cVector3d(0.0032,0,-0.001),
+							cVector3d(0,0.0032,-0.001)};
+	cVector3d gap(0,0.0023, 0);
+	for (int i=0; i<4; i++) {
+		pbutton *o = new pbutton();
+		
+		particle *p0 = new particle();
+		MakeParticle(p0, 0.001, 0.1, 1.0, start0[i]+cVector3d(-0.01, 0.00, -0.00), true);
+		p0->sphere->m_material->setRed();
+		o->particles.push_back(p0);
+		
+		particle *p = new particle();
+		MakeParticle(p, 0.0038, .5, 10.0, start0[i]+cVector3d(-0.0075, 0.00, -0.00), false);
+		p->sphere->m_material->setRed();
+		o->particles.push_back(p);
+		
+		spring *s = new spring();
+		MakeSpring(s, 7000, 100, 0.0095, p0, p);
+		p0->springs.push_back(s);
+		p->springs.push_back(s);
+		o->springs.push_back(s);
+		
+		particle *b = o->particles[1];
+		b->msphere = new cMesh();
+		cCreateCylinder(b->msphere, 0.005, 0.003, 4, 1, 1, true, true);
+		b->msphere->setLocalPos(start0[i]);
+//		b->msphere->setLocalPos(cVector3d(0.102,0.1001,0.10));
+//		b->msphere->createBruteForceCollisionDetector();
+		b->msphere->createAABBCollisionDetector(toolRadius);
+		b->msphere->computeBTN();
+		b->msphere->m_material = MyMaterial::create();
+		b->msphere->m_material->setWhite();
+		b->msphere->m_material->setUseHapticShading(true);
+		b->msphere->setStiffness(4000.0, true);
+		b->msphere->setFriction(8, 5.5);
+		MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
+		material0->hasTexture = false;
+		material0->id = 40+i;
+		edge->addChild(b->msphere);
+		
+		colorButtons.push_back(o);
+		colorLights.push_back(false);
+	}
+	
+	panels[occupiedPanels[5]]->addChild(edge);
+}
+
 void CreateNumberTextures()
 {
     for (string s : timerNumberTextureFiles)
@@ -2494,7 +2563,8 @@ int main(int argc, char* argv[])
     tool->setWaitForSmallForce(true);
     tool->start();
     
-    tool->setForcesOFF();
+    if (!gameStarted)
+		tool->setForcesOFF();
 
     //--------------------------------------------------------------------------
     // WIDGETS
@@ -2568,6 +2638,7 @@ int main(int argc, char* argv[])
 	FillGridColors();
 	
 	CreatePicturePuzzle();
+	CreateSimonSaysPuzzle();
 	
 	for (cMesh * c : sliderCylinder)
 		SetCellColor(c, randomColor);
@@ -2784,6 +2855,9 @@ void updateHaptics(void)
 	vector<bool> oldNumButton;
 	for (int i=0; i<12; i++)
 		oldNumButton.push_back(false);
+	vector<bool> oldColButton;
+	for (int i=0; i<4; i++)
+		oldColButton.push_back(false);
 
     cPrecisionClock clock;
     clock.reset();
@@ -2939,6 +3013,19 @@ void updateHaptics(void)
 		//				}
 					}
 					oldNumButton[i] = curNumButton;
+				}
+				for (int i = 0; i < 4; i++) {
+					bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
+					if (curNumButton != oldColButton[i]) {
+						if (!oldColButton[i] && curNumButton && !correctPW) {
+//							UpdateNumPadScreen(indexNumPadMap[i]);
+							//					cout << indexNumPadMap[i] << " pressed\n";
+						}
+		//				else {
+		//					cout << indexNumPadMap[i] << " released\n";
+		//				}
+					}
+					oldColButton[i] = curNumButton;
 				}
 			}
 
