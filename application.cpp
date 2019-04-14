@@ -360,6 +360,43 @@ const string scratchHintFiles[4] =
 vector<cTexture2dPtr> scratchHints;
 int scratchHintDivNumber = 0;
 
+vector<vector<cMesh *>> cells;
+int randomColor = 0;
+void setCellColor(cMesh *m, int i)
+{
+	switch (i) {
+		case 0:
+			m->m_material->setRed();
+			break;
+		case 1:
+			m->m_material->setOrange();
+			break;
+		case 2:
+			m->m_material->setYellow();
+			break;
+		case 3:
+			m->m_material->setGreen();
+			break;
+		case 4:
+			m->m_material->setBlue();
+			break;
+		case 5:
+			m->m_material->setPurple();
+			break;
+		default:
+		break;
+	}
+}	
+
+
+//vector<int> panelOrder;// {0,1,2,3,4,5,6,7,8,9,10};
+vector<int> panelOrderBigButton;// = {1,2,4};
+vector<int> panelOrderClues;// {0,1,7,10};
+vector<int> panelOrderPuzzels;// = {1,2,4,5,6,8,9};
+vector<int> occupiedPanels;
+int panelOrderBigButtonValues[3] = {1,2,4};
+int panelOrderCluesValues[4] = {0,3,7,10};
+int panelOrderPuzzlesValues[4] = {5,6,8,9};
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -392,6 +429,56 @@ vector<int> Random(int n, bool dupes=false)
 	}
     return tempOrder;
 }
+
+void RandomizePanelPreferences() {
+	vector<int> randomBVs = Random(3);
+	vector<int> randomCVs = Random(4);
+	vector<int> randomPVs = Random(4);
+	vector<int> panelOrderPuzzels0;
+	for (int i : randomBVs)
+		panelOrderBigButton.push_back(panelOrderBigButtonValues[i]);
+	for (int i : randomCVs)
+		panelOrderClues.push_back(panelOrderCluesValues[i]);
+	for (int i : randomPVs)
+		panelOrderPuzzels0.push_back(panelOrderPuzzlesValues[i]);
+	
+	panelOrderPuzzels0.push_back(panelOrderBigButton[1]);
+	panelOrderPuzzels0.push_back(panelOrderBigButton[2]);
+
+	vector<int> randomPVs0 = Random(6);
+	for (int i: randomPVs0)
+		panelOrderPuzzels.push_back(panelOrderPuzzels0[i]);
+
+	for (int i:panelOrderBigButton)
+		cout << i;
+	cout << endl;
+	for (int i:panelOrderClues)
+		cout << i;
+	cout << endl;
+	for (int i:panelOrderPuzzels)
+		cout << i;
+	cout << endl;
+
+	occupiedPanels.clear();
+
+	occupiedPanels.push_back(panelOrderClues[0]);
+	occupiedPanels.push_back(panelOrderBigButton[0]);
+	occupiedPanels.push_back(panelOrderPuzzels[0]);
+	occupiedPanels.push_back(panelOrderClues[1]);
+	occupiedPanels.push_back(panelOrderPuzzels[1]);
+	occupiedPanels.push_back(panelOrderPuzzels[2]);
+	occupiedPanels.push_back(panelOrderPuzzels[3]);
+	occupiedPanels.push_back(panelOrderClues[2]);
+	occupiedPanels.push_back(panelOrderPuzzels[4]);
+	occupiedPanels.push_back(panelOrderPuzzels[5]);
+	occupiedPanels.push_back(panelOrderClues[3]);
+
+	for (int i:occupiedPanels)
+		cout << i;
+	cout << endl;
+	
+}
+
 
 void SetColors()
 {
@@ -550,7 +637,7 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
     
-    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
+//    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
 
     world->addChild(bomb);
 }
@@ -573,7 +660,8 @@ void CreateWires()
 
     base->setLocalPos(cVector3d(0.0005, 0.001, 0.0005));
     base->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
-    panels[0]->addChild(base);
+//    panels[0]->addChild(base);
+    panels[occupiedPanels[0]]->addChild(base);
 
     double posX = -0.0035;
     double posY = 0.0005;
@@ -599,7 +687,7 @@ void CreateWires()
         wire->setLocalPos(cVector3d(posZ, posX + (i*spacing), posY - (i*offsetY)));
         wire->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 		wires.push_back(wire);
-        panels[0]->addChild(wire);
+        panels[occupiedPanels[0]]->addChild(wire);
     }
     wiresMade = true;
 }
@@ -661,28 +749,71 @@ void CreateWireCover()
 		material->id = 15+i;
 		
 		c->mesh->setLocalPos(cVector3d(0.0018, -0.0078, -0.0005));
+		
 		c->mesh->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
 		
 		if (i==0) {
 			panels[0]->addChild(c->mesh);
-			mesh->setUseTransparency(true);
+//			mesh->setUseTransparency(true);
 		}
 		if (i==1) panels[3]->addChild(c->mesh);
 		if (i==2) panels[7]->addChild(c->mesh);
 		if (i==3) panels[10]->addChild(c->mesh);
 		c->coverAngle = 0;
 		c->coverUnlocked = false;
+		if (i==2) c->coverUnlocked = true;
+
 		covers.push_back(c);
 	}
 }
 
-// right pos : 0.019
-// left pos : - 0.019
-// top = 0.0095
-// bottom = -0.0095
+void FillGridColors() 
+{
+	vector<int> tempOrder = Random(6);
+	randomColor = tempOrder[0]; // any color, it's random
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<6; j++) {		
+			if (sliderMixedValues[i][j] == dialOrder[i]) {
+				setCellColor(cells[i][j], randomColor);
+			}
+		}
+		vector<int> temp0 = Random(6);
+		for (int j=0; j<6; j++) {		
+			if (sliderMixedValues[i][j] == dialOrder[i])
+				continue;
+			if (temp0[j] == randomColor)
+				continue;
+			setCellColor(cells[i][j], temp0[j]);
+		}
+	}
+}
 
-// front = 0.006
-// behind: 0.0125
+void CreateGridClue()
+{
+	cMesh * mesh = new cMesh();
+	cCreatePlane(mesh, 0.0145, 0.0145, cVector3d(0, 0, 0));
+	mesh->setLocalPos(cVector3d(0.001,0,0));
+	mesh->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
+	mesh->m_material->setBlack();
+	
+	cVector3d startPos(-0.0015, -0.006,0.00001);
+	cVector3d gapx(0,0.0024,0);
+	cVector3d gapy(0.0024,0,0);
+	for (int i=0; i<3; i++) {
+		vector<cMesh*> tempVector;
+		for (int j=0; j<6; j++) {
+			cMesh * mv = new cMesh();
+			cCreatePlane(mv, 0.0022, 0.0022,startPos+i*gapy+j*gapx);
+			mv->m_material->setWhite();
+			mesh->addChild(mv);
+			tempVector.push_back(mv);
+		}
+		cells.push_back(tempVector);
+	}
+	
+	panels[occupiedPanels[10]]->addChild(mesh);
+	
+}
 
 void CreateButton(pbutton *o) {
 	particle *p0 = new particle();
@@ -696,44 +827,21 @@ void CreateButton(pbutton *o) {
 	o->particles.push_back(p);
 	
 	spring *s = new spring();
-	MakeSpring(s, 8000, 100, 0.01, p0, p);
+	MakeSpring(s, 6000, 100, 0.01, p0, p);
 	p0->springs.push_back(s);
 	p->springs.push_back(s);
 	o->springs.push_back(s);
 	
-/*	for (particle *b : o->particles) {
-		b->sphere->setLocalPos(b->position);
-		bomb->addChild(b->sphere);
-	}
-	*/
 	particle *b = o->particles[1];
-/*	cMesh *mesh = new cMesh();
-	cCreateSphere(mesh, b->radius, 10, 5, b->position);
-	mesh->createBruteForceCollisionDetector();
-    mesh->computeBTN();
-    mesh->m_material = MyMaterial::create();
-	mesh->m_material->setWhite();
-	mesh->m_material->setUseHapticShading(true);
-	mesh->setStiffness(2000.0, true);
-	mesh->setFriction(5, 3.5);
-	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-	material->hasTexture = false;
-	bomb->addChild(mesh);
-	b->sphere = mesh;
-*/
 	b->msphere = new cMesh();
-//	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
 	cCreateCylinder(b->msphere, 2*b->radius, b->radius, 20, 10, 10, true, true, b->position);
-        b->msphere->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
-//        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-//	b->msphere->createBruteForceCollisionDetector();
-b->msphere->createAABBCollisionDetector(toolRadius);
+	b->msphere->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
+	b->msphere->createAABBCollisionDetector(toolRadius);
     b->msphere->computeBTN();
     b->msphere->m_material = MyMaterial::create();
 	b->msphere->m_material->setRed();
 	b->msphere->m_material->setUseHapticShading(true);
 	b->msphere->setStiffness(2000.0, true);
-//	b->msphere->setFriction(1.0, .1);
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material->hasTexture = false;
 	material->id = 7;
@@ -741,7 +849,6 @@ b->msphere->createAABBCollisionDetector(toolRadius);
     bigButtonIndicator = new cMesh();
     cCreateSphere(bigButtonIndicator, 0.002, 10, 5);
 	bigButtonIndicator->setLocalPos(0.0005, 0.006, 0.006);
-//	m0->createBruteForceCollisionDetector();
 	bigButtonIndicator->createAABBCollisionDetector(toolRadius);
 	bigButtonIndicator->computeBTN();
 	bigButtonIndicator->m_material = MyMaterial::create();
@@ -752,9 +859,8 @@ b->msphere->createAABBCollisionDetector(toolRadius);
 	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(bigButtonIndicator->m_material);
 	material0->hasTexture = false;
 
-	panels[1]->addChild(b->msphere);
-	panels[1]->addChild(bigButtonIndicator);
-//	b->sphere = mesh;
+	panels[occupiedPanels[1]]->addChild(b->msphere);
+	panels[occupiedPanels[1]]->addChild(bigButtonIndicator);
 
 }
 
@@ -936,9 +1042,6 @@ void CreatePanels()
 
         MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
         material->hasTexture = false;
-//        material->id = -1;
-//		if (i==1) material->id =7;
-//		if (i==3) material->id =8;
 
         bomb->addChild(panel);
         panels.push_back(panel);
@@ -957,6 +1060,7 @@ void SetPanelPositions()
         i++;
     }
 }
+
 
 void CreateBrailleOrder() 
 {
@@ -1043,7 +1147,7 @@ void CreateBraillePuzzle()
 		material->hasTexture = true;
 
 		mesh->setUseTexture(true);
-        panels[3]->addChild(mesh);
+        panels[occupiedPanels[3]]->addChild(mesh);
         brailleLetters.push_back(mesh);
     }
 }
@@ -1091,7 +1195,7 @@ void CreateBrailleLegend()
 
 	mesh->setUseTexture(true);
 	
-	panels[7]->addChild(mesh);
+	panels[occupiedPanels[7]]->addChild(mesh);
 	
 }
 
@@ -1132,7 +1236,7 @@ void CreateScratchAndWin()
     material->hasTexture = false;
 	hint->setUseTexture(true);
 
-	panels[2]->addChild(hint);
+	panels[occupiedPanels[2]]->addChild(hint);
 
     /////////////////////////////////////////////
 
@@ -1186,7 +1290,7 @@ void CreateScratchAndWin()
     scratchSurface->m_material->setHapticTriangleSides(true, false);
     scratchSurface->m_material->setTextureLevel(1.5);
 	
-	panels[2]->addChild(scratchSurface);
+	panels[occupiedPanels[2]]->addChild(scratchSurface);
 }
 
 
@@ -1398,9 +1502,9 @@ void CreateLockPad(pbutton *o)
 	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material0->hasTexture = false;
 	material0->id = 8;
-	panels[4]->addChild(b->msphere);
+	panels[occupiedPanels[4]]->addChild(b->msphere);
 	
-	panels[4]->addChild(mesh);
+	panels[occupiedPanels[4]]->addChild(mesh);
 //	bomb->addChild(mesh);
 	
 }
@@ -1423,13 +1527,10 @@ void CreateNumberPad() {
 	cVector3d gap(0,0.0023, 0);
 	for (int i=0; i<6; i++) {
 		cMesh * md = new cMesh();
-//			cCreatePlane(mv, 0.0045, 0.0045, startPos+i*gapy+j*gapx);//cVector3d(0.0125, 0.0065, 0.005));
 		cCreatePlane(md, 0.0023, 0.003, cVector3d(0, 0, 0));
-//		md->setLocalPos(b->position + cVector3d(0.005,0,0.0));
 		md->setLocalPos(start0+gap*i);
 		md->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
 		md->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
-//		md->setUseTexture(true);
 		md->m_material->setBlack();
 		md->m_texture = numberTextures[0];
 		screenblock->addChild(md);
@@ -1437,7 +1538,7 @@ void CreateNumberPad() {
 	}
 	
 	
-	panels[9]->addChild(screenblock);
+	panels[occupiedPanels[9]]->addChild(screenblock);
 	
 	cVector3d startPos(0.003,-0.0026,0.0011);
 	cVector3d gapx(0,0.0018,0);
@@ -1447,14 +1548,11 @@ void CreateNumberPad() {
 			pbutton *o = new pbutton();
 			
 			particle *p0 = new particle();
-//			MakeParticle(p0, 0.001, 0.1, 1.0, startPos+i*gapy+j*gapx + cVector3d(-0.01, 0.0,0.0), true);
 			MakeParticle(p0, 0.001, 0.1, 1.0, startPos+i*gapy+j*gapx+cVector3d(-0.01, 0.00, -0.00), true);
 			p0->sphere->m_material->setRed();
 			o->particles.push_back(p0);
 			
 			particle *p = new particle();
-//			MakeParticle(p, 0.0038, .5, 10.0, startPos+i*gapy+j*gapx + cVector3d(-0.0075, 0.0, 0.0), false);
-//			MakeParticle(p, 0.0038, .5, 10.0, cVector3d(0.0, 0.0, 0.0), false);
 			MakeParticle(p, 0.0038, .5, 10.0, startPos+i*gapy+j*gapx+cVector3d(-0.0075, 0.00, -0.00), false);
 			p->sphere->m_material->setRed();
 			o->particles.push_back(p);
@@ -1467,20 +1565,14 @@ void CreateNumberPad() {
 			
 			particle *b = o->particles[1];
 			b->msphere = new cMesh();
-		//	cCreateSphere(b->msphere, b->radius, 10, 5, b->position);
-//			cCreateCylinder(b->msphere, 4*b->radius, b->radius, 4, 1, 1, true, true, b->position);
 			cCreateBox(b->msphere, 0.0095, 0.003, 0.003, b->position);
-//			b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
-//			b->msphere->setLocalPos(startPos+i*gapy+j*gapx+b->position);
-//			b->msphere->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 45);
-		//        b->msphere->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 			b->msphere->createBruteForceCollisionDetector();
 			b->msphere->computeBTN();
 			b->msphere->m_material = MyMaterial::create();
 			b->msphere->m_material->setRed();
 			b->msphere->m_material->setUseHapticShading(true);
 			b->msphere->setStiffness(4000.0, true);
-			b->msphere->setFriction(5, 3.5);
+			b->msphere->setFriction(8, 5.5);
 			MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 			material0->hasTexture = false;
 			material0->id = 19+i*4+j;
@@ -1502,7 +1594,7 @@ void CreateNumberPad() {
 			mv->m_texture = numberTextures[k]; 
 			
 			b->msphere->addChild(mv);
-			panels[9]->addChild(b->msphere);
+			panels[occupiedPanels[9]]->addChild(b->msphere);
 			
 		}
 	}
@@ -1574,7 +1666,7 @@ void CreateSliderPuzzle()
 		mesh->addChild(sliderValue[i]);
 	}
 
-	panels[6]->addChild(mesh);
+	panels[occupiedPanels[6]]->addChild(mesh);
 	
 }
 
@@ -1905,7 +1997,7 @@ void updateNumPadScreen(int i) {
 		}
 		if (correct) {
 			correctPW = true;
-			covers[2]->coverUnlocked = true;
+			covers[1]->coverUnlocked = true;
 			for(int j=0; j<numPadEntry.size(); j++)
 //				NumScreen[j]->m_texture = numberTextures[0];
 				NumScreen[j]->m_material->setGreen();
@@ -2160,6 +2252,10 @@ int main(int argc, char* argv[])
     CreateBomb();
     CreatePanels();
 
+	for (int i=0; i<11; i++)
+		occupiedPanels.push_back(i);
+//	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
+
     // Wires
     CreateWires();
     CreateCutWires();
@@ -2196,6 +2292,8 @@ int main(int argc, char* argv[])
 
 	CreateNumberPad();
 
+	CreateGridClue();
+	FillGridColors();
     // End game
     CreateEndGameScreens();
 
@@ -2492,61 +2590,59 @@ void updateHaptics(void)
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 0.25);
 			rightPressed = false;
         }
-//        tool->setLocalRot(bomb->getLocalRot());
-//        cVector3d force(0, 0, 0);
 
-//		force = update(bigbutton, 0.001, position);
-//		if (update(bigbutton, 0.001, position))
-//			cout << "pressed" << endl;
-//		else
-//			cout << "released" << endl;
-		bool curButton0 = CheckButton(bigbutton, 0.001, 7);
-		if (curButton0 != oldButton0 && !bigButtonSolved) {
-			if (!oldButton0 && curButton0) {
-				bigButtonIndicator->m_material->setYellow();
-			}
-			else {
-				if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
-					bigButtonIndicator->m_material->setGreen();
-					covers[3]->coverUnlocked = true;
-					bigButtonSolved = true;
+		if (right || left) {
+			// no button calculations
+		}
+		else {
+			bool curButton0 = CheckButton(bigbutton, 0.001, 7);
+			if (curButton0 != oldButton0 && !bigButtonSolved) {
+				if (!oldButton0 && curButton0) {
+					bigButtonIndicator->m_material->setYellow();
 				}
 				else {
-					bigButtonIndicator->m_material->setRed();
-					indicatorCD = 3;
+					if ((timeLimit[2]*10+timeLimit[3])%scratchNum[scratchID] == 0) {
+						bigButtonIndicator->m_material->setGreen();
+						covers[3]->coverUnlocked = true;
+						bigButtonSolved = true;
+					}
+					else {
+						bigButtonIndicator->m_material->setRed();
+						indicatorCD = 3;
+					}
 				}
 			}
-		}
-		if (indicatorCD == 1) {
-			bigButtonIndicator->m_material->setGrayDim();
-		}
-		oldButton0 = curButton0;
-		
-		bool curButton1 = CheckButton(lockbutton, 0.001, 8);
-		if (curButton1 != oldButton1) {
-			if (!oldButton1 && curButton1) {
-				cVector3d dialValues = GetDialValues();
-				if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
-					&& dialValues.z() == dialOrder[2] && !covers[0]->coverUnlocked)
-						covers[0]->coverUnlocked = true; 	// REMEMBER TO CHANGE
+			if (indicatorCD == 1) {
+				bigButtonIndicator->m_material->setGrayDim();
 			}
-//			else
-//				cout << "released\n";
-		}
-		oldButton1 = curButton1;
+			oldButton0 = curButton0;
+			
+			bool curButton1 = CheckButton(lockbutton, 0.001, 8);
+			if (curButton1 != oldButton1) {
+				if (!oldButton1 && curButton1) {
+					cVector3d dialValues = GetDialValues();
+					if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
+						&& dialValues.z() == dialOrder[2] && !covers[0]->coverUnlocked)
+							covers[0]->coverUnlocked = true; 	// REMEMBER TO CHANGE
+				}
+	//			else
+	//				cout << "released\n";
+			}
+			oldButton1 = curButton1;
 
-		for (int i=0; i<12; i++) {
-			bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
-			if (curNumButton != oldNumButton[i]) {
-				if (!oldNumButton[i] && curNumButton && !correctPW) {
-					updateNumPadScreen(indexNumPadMap[i]);
-//					cout << indexNumPadMap[i] << " pressed\n";
+			for (int i=0; i<12; i++) {
+				bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
+				if (curNumButton != oldNumButton[i]) {
+					if (!oldNumButton[i] && curNumButton && !correctPW) {
+						updateNumPadScreen(indexNumPadMap[i]);
+	//					cout << indexNumPadMap[i] << " pressed\n";
+					}
+	//				else {
+	//					cout << indexNumPadMap[i] << " released\n";
+	//				}
 				}
-//				else {
-//					cout << indexNumPadMap[i] << " released\n";
-//				}
+				oldNumButton[i] = curNumButton;
 			}
-			oldNumButton[i] = curNumButton;
 		}
 
 
