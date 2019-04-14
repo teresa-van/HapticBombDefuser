@@ -227,11 +227,44 @@ pbutton *lockbutton;
 
 ///////////////////////////////////////////////////
 
+vector<cTexture2dPtr> generalNumberTextures;
+const string generalNumberTextureFiles[13] =
+{
+	"gen0.png",
+	"gen1.png",
+	"gen2.png",
+	"gen3.png",
+	"gen4.png",
+	"gen5.png",
+	"gen6.png",
+	"gen7.png",
+	"gen8.png",
+	"gen9.png",
+	"backspace.png",
+	"enter.png",
+	"asterisk.png",
+};
+
+vector<cTexture2dPtr> digitalNumberTextures;
+const string digitalNumberTextureFiles[10] =
+{
+	"dig0.png",
+	"dig1.png",
+	"dig2.png",
+	"dig3.png",
+	"dig4.png",
+	"dig5.png",
+	"dig6.png",
+	"dig7.png",
+	"dig8.png",
+	"dig9.png",
+};
+
 int timeLimit[4] = {0,5,0,0}; // mm:ss
-vector<cTexture2dPtr> numberTextures;
 #endif
 
-const string numberTextureFiles[11] = 
+vector<cTexture2dPtr> timerNumberTextures;
+const string timerNumberTextureFiles[11] = 
 {
     "0.png",
     "1.png",
@@ -363,7 +396,7 @@ int scratchHintDivNumber = 0;
 
 vector<vector<cMesh *>> cells;
 int randomColor = 0;
-void setCellColor(cMesh *m, int i)
+void SetCellColor(cMesh *m, int i)
 {
 	switch (i) {
 		case 0:
@@ -478,7 +511,6 @@ void RandomizePanelPreferences() {
 	cout << endl;
 	
 }
-
 
 void SetColors()
 {
@@ -605,7 +637,7 @@ Cover * CreateCover()
 
 	cMesh* mesh = c->mesh->getMesh(0);
 	mesh->m_material = MyMaterial::create();
-	mesh->m_material->setGrayDarkSlate();
+	mesh->m_material->setColor(cColorf(0.2, 0.2, 0.2));
 	mesh->m_material->setUseHapticShading(true);
 	c->mesh->setStiffness(2000.0, true);
 
@@ -615,8 +647,6 @@ Cover * CreateCover()
 	albedoMap->setWrapModeT(GL_REPEAT);
 	albedoMap->setUseMipmaps(true);
 	mesh->m_texture = albedoMap;
-	mesh->setUseTexture(true);
-	mesh->setUseTransparency(false);
 
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
 	material->hasTexture = false;
@@ -695,15 +725,18 @@ void CreateWires()
     MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
     material->hasTexture = false;
 
-    base->setLocalPos(cVector3d(0.0005, 0.001, 0.0005));
+    base->setLocalPos(cVector3d(0.0005, 0, 0.0005));
     base->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 //    panels[0]->addChild(base);
 
 	Cover * cover = CreateCover();
+	cover->mesh->setUseTexture(true);
+	cover->mesh->setUseTransparency(true);
+	cover->mesh->getMesh(0)->m_material->setWhite();
 	panels[occupiedPanels[0]]->addChild(cover->mesh);
     panels[occupiedPanels[0]]->addChild(base);
 
-    double posX = -0.0035;
+    double posX = -0.0042;
     double posY = 0.0005;
     double posZ = 0.0025;
     double spacing = 0.003;
@@ -767,7 +800,7 @@ void FillGridColors()
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<6; j++) {		
 			if (sliderMixedValues[i][j] == dialOrder[i]) {
-				setCellColor(cells[i][j], randomColor);
+				SetCellColor(cells[i][j], randomColor);
 			}
 		}
 		vector<int> temp0 = Random(6);
@@ -776,29 +809,40 @@ void FillGridColors()
 				continue;
 			if (temp0[j] == randomColor)
 				continue;
-			setCellColor(cells[i][j], temp0[j]);
+			SetCellColor(cells[i][j], temp0[j]);
 		}
 	}
 }
 
 void CreateGridClue()
 {
-	cMesh * mesh = new cMesh();
-	cCreatePlane(mesh, 0.0145, 0.0145, cVector3d(0, 0, 0));
-	mesh->setLocalPos(cVector3d(0.001,0,0));
-	mesh->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
-	mesh->m_material->setBlack();
+	//cMesh * mesh = new cMesh();
+	//cCreatePlane(mesh, 0.0145, 0.0145, cVector3d(0, 0, 0));
+	cMultiMesh * screen = new cMultiMesh();
+	screen->loadFromFile("models/gridpanel.obj");
+	screen->setLocalPos(cVector3d(0.001,0,0));
+	screen->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
 	
-	cVector3d startPos(-0.0015, -0.006,0.00001);
+	cMesh* mesh = screen->getMesh(0);
+	mesh->m_material = MyMaterial::create();
+	mesh->m_material->setColor(cColorf(0.2, 0.2, 0.2));
+	mesh->m_material->setUseHapticShading(true);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+	material->hasTexture = false;
+	
+	cVector3d startPos(-0.0022, -0.006, 0.00001);
 	cVector3d gapx(0,0.0024,0);
 	cVector3d gapy(0.0024,0,0);
-	for (int i=0; i<3; i++) {
+	for (int i=0; i < 3; i++) 
+	{
 		vector<cMesh*> tempVector;
-		for (int j=0; j<6; j++) {
+		for (int j=0; j<6; j++) 
+		{
 			cMesh * mv = new cMesh();
-			cCreatePlane(mv, 0.0022, 0.0022,startPos+i*gapy+j*gapx);
+			cCreatePlane(mv, 0.0022, 0.0022, startPos+i*gapy+j*gapx);
 			mv->m_material->setWhite();
-			mesh->addChild(mv);
+			screen->addChild(mv);
 			tempVector.push_back(mv);
 		}
 		cells.push_back(tempVector);
@@ -806,7 +850,7 @@ void CreateGridClue()
 	
 	Cover * cover = CreateCover();
 	panels[occupiedPanels[10]]->addChild(cover->mesh);
-	panels[occupiedPanels[10]]->addChild(mesh);
+	panels[occupiedPanels[10]]->addChild(screen);
 	
 }
 
@@ -875,12 +919,12 @@ void CreateSlider(int i) {
     
     cMesh * m0 = new cMesh();
     cCreateSphere(m0, 0.0005, 10, 5);
-	m0->setLocalPos(-0.007, 0.003-gap, 0.001);
+	m0->setLocalPos(-0.007, 0.0035-gap, 0.001);
 	m0->createBruteForceCollisionDetector();
 //	m0->createAABBCollisionDetector(toolRadius);
 //	m0->computeBTN();
 	m0->m_material = MyMaterial::create();
-	m0->m_material->setRed();
+	m0->m_material->setWhiteAliceBlue();
 	m0->m_material->setUseHapticShading(true);
 	m0->setStiffness(800.0, true);
 	m0->m_material->setHapticTriangleSides(true, true);
@@ -889,12 +933,12 @@ void CreateSlider(int i) {
     
     cMesh * m1 = new cMesh();
     cCreateSphere(m1, 0.0005, 10, 5);
-	m1->setLocalPos(0.003, 0.003-gap, 0.001);
+	m1->setLocalPos(0.003, 0.0035-gap, 0.001);
     m1->createBruteForceCollisionDetector();
 //	m1->createAABBCollisionDetector(toolRadius);
 //	m1->computeBTN();
 	m1->m_material = MyMaterial::create();
-	m1->m_material->setRed();
+	m1->m_material->setWhiteAliceBlue();
 	m1->m_material->setUseHapticShading(true);
 	m1->setStiffness(800.0, true);
 	m1->m_material->setHapticTriangleSides(true, true);
@@ -903,18 +947,18 @@ void CreateSlider(int i) {
 	
 //	cShapeLine * line = new cShapeLine(m0->getLocalPos(), m1->getLocalPos());
 	cShapeLine * line = new cShapeLine(m0, m1);
-	line->m_colorPointA.setBlack();
-    line->m_colorPointB.setBlack();
+	line->m_colorPointA.setWhiteAliceBlue();
+    line->m_colorPointB.setWhiteAliceBlue();
     line->createEffectMagnetic();
     line->m_material->setMagnetMaxDistance(0.0005);
     line->m_material->setMagnetMaxForce(0.3 * maxLinearForce);
-    line->m_material->setStiffness(0.2 * maxStiffness);
+    line->m_material->setStiffness(0 * maxStiffness);
 
     
     cMesh * m2 = new cMesh();
     cCreateCylinder(m2, 0.0015, 0.0015, 10, 1, 1, true, true);
 	m2->rotateAboutGlobalAxisDeg(cVector3d(0.0, 1.0, 0.0), 90);
-	m2->setLocalPos(-0.002, 0.003-gap, 0.001);
+	m2->setLocalPos(-0.002, 0.0035-gap, 0.001);
 	m2->createBruteForceCollisionDetector();
 //	m2->createAABBCollisionDetector(toolRadius);
 //	m2->computeBTN();
@@ -929,9 +973,9 @@ void CreateSlider(int i) {
 	material2->id = 12+i;
 	
     cMesh * m3 = new cMesh();
-    cCreateBox(m3, 0.004, 0.0045, 0.0025);
+    cCreateBox(m3, 0.003, 0.003, 0.0025);
 //	m3->rotateAboutGlobalAxisDeg(cVector3d(0.0, 1.0, 0.0), 90);
-	m3->setLocalPos(0.006, 0.0045-gap, 0.001);
+	m3->setLocalPos(0.0058, 0.005-gap, -0.001);
 	m3->createAABBCollisionDetector(toolRadius);
 	m3->computeBTN();
 	m3->m_material = MyMaterial::create();
@@ -944,7 +988,7 @@ void CreateSlider(int i) {
 		
     cMesh * m4 = new cMesh();
 	cCreatePlane(m4, 0.011, 0.003, cVector3d(0,0,0));
-	m4->setLocalPos(-0.002, 0.0045-gap, 0.000682);
+	m4->setLocalPos(-0.002, 0.005-gap, 0.00001);
     m4->createBruteForceCollisionDetector();
 //	m4->createAABBCollisionDetector(toolRadius);
 //	m4->computeBTN();
@@ -956,7 +1000,7 @@ void CreateSlider(int i) {
 	MyMaterialPtr material4 = std::dynamic_pointer_cast<MyMaterial>(m4->m_material);
 	cTexture2dPtr albedoMap = cTexture2d::create();
 	// ticks
-    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->loadFromFile("textures/ticks.png");
     albedoMap->setWrapModeS(GL_REPEAT);
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
@@ -980,16 +1024,15 @@ void CreateSlider(int i) {
     */
     m4->m_texture = albedoMap;
     material4->hasTexture = false;
-
 	m4->setUseTexture(true);
 	
 	
 	cMesh * mv = new cMesh();
-	cCreatePlane(mv, 0.0025, 0.0045, cVector3d(0.0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
+	cCreatePlane(mv, 0.0025, 0.003, cVector3d(0,0,0));//cVector3d(0.0125, 0.0065, 0.005));
 //	cCreatePlane(mv, 0.0025, 0.0045, cVector3d(0.01, 0.0045-gap, 0.001));//cVector3d(0.0125, 0.0065, 0.005));
 //	mv->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
 //	mv->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
-	mv->setLocalPos(0.006, 0.0045-gap, 0.002251);
+	mv->setLocalPos(0.0058, 0.005-gap, 0.0008);
 //	mv->scale(0.55);
 	mv->setUseTexture(true);
 	
@@ -1114,8 +1157,8 @@ void CreateBraillePuzzle()
         mesh->setUseTransparency(true, true);
 		
 		mesh->m_material = MyMaterial::create();
-		mesh->m_material->setWhite();
-		mesh->m_material->setUseHapticShading(true);
+		//mesh->m_material->setWhite();
+		//mesh->m_material->setUseHapticShading(true);
 		mesh->setStiffness(2000.0, true);
 		mesh->setFriction(0, 0);
 
@@ -1163,8 +1206,8 @@ void CreateBrailleLegend()
     mesh->setUseTransparency(true, true);
 	
     mesh->m_material = MyMaterial::create();
-    mesh->m_material->setWhite();
-    mesh->m_material->setUseHapticShading(true);
+    //mesh->m_material->setWhite();
+    //mesh->m_material->setUseHapticShading(true);
     mesh->setStiffness(2000.0, true);
 
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
@@ -1193,11 +1236,11 @@ void CreateBrailleLegend()
     material->hasTexture = true;
 
 	mesh->setUseTexture(true);
+	mesh->setUseCulling(true);
 	
 	Cover * cover = CreateCover();
 	panels[occupiedPanels[7]]->addChild(cover->mesh);
 	panels[occupiedPanels[7]]->addChild(mesh);
-	
 }
 
 void CreateScratchTextures()
@@ -1403,7 +1446,7 @@ void CreateLockPad(pbutton *o)
 		m->createAABBCollisionDetector(toolRadius);
 		m->computeBTN();
 		m->m_material = MyMaterial::create();
-		m->m_material->setBrownGoldenrod();
+		m->m_material->setYellowMoccasin();
 		m->m_material->setUseHapticShading(true);
 		m->setStiffness(1000.0, true);
 		m->m_material->setHapticTriangleSides(true, true);
@@ -1482,7 +1525,7 @@ void CreateLockPad(pbutton *o)
 	o->particles.push_back(p);
 	
 	spring *s = new spring();
-	MakeSpring(s, 7000, 100, 0.01, p0, p);
+	MakeSpring(s, 6000, 100, 0.01, p0, p);
 	p0->springs.push_back(s);
 	p->springs.push_back(s);
 	o->springs.push_back(s);
@@ -1518,7 +1561,7 @@ void CreateNumberPad() {
 	screenblock->createBruteForceCollisionDetector();
 	screenblock->computeBTN();
 	screenblock->m_material = MyMaterial::create();
-	screenblock->m_material->setRed();
+	screenblock->m_material->setBlack();
 	screenblock->m_material->setUseHapticShading(true);
 	screenblock->setStiffness(4000.0, true);
 	screenblock->setFriction(3.5, 1.5);
@@ -1533,7 +1576,9 @@ void CreateNumberPad() {
 		md->rotateAboutLocalAxisDeg(cVector3d(0,1,0), 90);
 		md->rotateAboutLocalAxisDeg(cVector3d(0,0,1), 90);
 		md->m_material->setBlack();
-		md->m_texture = numberTextures[0];
+		md->m_texture = generalNumberTextures[12];
+		md->setUseTransparency(true);
+		md->setUseTexture(true);
 		screenblock->addChild(md);
 		NumScreen.push_back(md);
 	}
@@ -1569,7 +1614,7 @@ void CreateNumberPad() {
 			b->msphere->createBruteForceCollisionDetector();
 			b->msphere->computeBTN();
 			b->msphere->m_material = MyMaterial::create();
-			b->msphere->m_material->setRed();
+			b->msphere->m_material->setWhite();
 			b->msphere->m_material->setUseHapticShading(true);
 			b->msphere->setStiffness(4000.0, true);
 			b->msphere->setFriction(8, 5.5);
@@ -1590,12 +1635,12 @@ void CreateNumberPad() {
 ////			mv->rotateAboutLocalAxisDeg(cVector3d(1,0,0), 90);
 			mv->setUseTexture(true);
 			int k = indexNumPadMap[i*4+j];
-			if (k > 10) k=10;
-			mv->m_texture = numberTextures[k]; 
+			//if (k == 11) k=12;
+			mv->m_texture = generalNumberTextures[k]; 
+			mv->setUseTransparency(true);
 			
 			b->msphere->addChild(mv);
 			panels[occupiedPanels[9]]->addChild(b->msphere);
-			
 		}
 	}
 }
@@ -1672,15 +1717,35 @@ void CreateSliderPuzzle()
 
 void CreateNumberTextures()
 {
-    for (string s : numberTextureFiles)
+    for (string s : timerNumberTextureFiles)
     {
         cTexture2dPtr tex = cTexture2d::create();
         tex->loadFromFile("textures/" + s);
         tex->setWrapModeS(GL_REPEAT);
         tex->setWrapModeT(GL_REPEAT);
         tex->setUseMipmaps(true);
-        numberTextures.push_back(tex);
+        timerNumberTextures.push_back(tex);
     }
+
+	for (string s : generalNumberTextureFiles)
+	{
+		cTexture2dPtr tex = cTexture2d::create();
+		tex->loadFromFile("textures/" + s);
+		tex->setWrapModeS(GL_REPEAT);
+		tex->setWrapModeT(GL_REPEAT);
+		tex->setUseMipmaps(true);
+		generalNumberTextures.push_back(tex);
+	}
+
+	for (string s : digitalNumberTextureFiles)
+	{
+		cTexture2dPtr tex = cTexture2d::create();
+		tex->loadFromFile("textures/" + s);
+		tex->setWrapModeS(GL_REPEAT);
+		tex->setWrapModeT(GL_REPEAT);
+		tex->setUseMipmaps(true);
+		digitalNumberTextures.push_back(tex);
+	}
 }
 
 void CreateTimer()
@@ -1721,7 +1786,7 @@ void CreateTimer()
     mesh->rotateAboutGlobalAxisDeg(cVector3d(0,1,0), 90);
     mesh->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
     mesh->scale(0.55);
-    mesh->m_texture = numberTextures[10];
+    mesh->m_texture = timerNumberTextures[10];
     mesh->setUseTexture(true);
     timer->addChild(mesh);
 
@@ -1744,7 +1809,7 @@ void UpdateTimer()
     int i = 0;
     for (cMesh * m : timerNumbers)
     {
-        m->m_texture = numberTextures[timeLimit[i]];
+        m->m_texture = timerNumberTextures[timeLimit[i]];
         i++;
     }
 }
@@ -1783,7 +1848,7 @@ void UpdateTimeElapsed()
     // cout << timeLimit[0] << ", " << timeLimit[1] << ", " << timeLimit[2] << ", " << timeLimit[3] << "\n";
 }
 
-double getCoverAngle(cMesh *m) {
+double GetCoverAngle(cMesh *m) {
 	cVector3d pos(0,0,0);
 	cVector3d ref = (cVector3d(0,.001,0));
 	double px = ref.x();
@@ -1879,10 +1944,10 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 			else if (wireID > 14 && wireID < 19 && angVel.z()!=0) {
 				if (covers[wireID-15]->coverAngle <=135 && covers[wireID-15]->coverUnlocked) {
 					m->rotateAboutLocalAxisRad(cNormalize(angVel), timeInterval * angVel.length());
-					covers[wireID-15]->coverAngle = getCoverAngle(m);
+					covers[wireID-15]->coverAngle = GetCoverAngle(m);
 					if (covers[wireID-15]->coverAngle >135)  {
 						m->rotateAboutLocalAxisRad(cNormalize(-angVel), timeInterval * angVel.length());
-						covers[wireID-15]->coverAngle = getCoverAngle(m);
+						covers[wireID-15]->coverAngle = GetCoverAngle(m);
 					}
 				}
 			}			
@@ -1906,7 +1971,8 @@ cVector3d GetDialValues()
 //	double interval = 0.0075/6;
 	vector<double> dialResult;
 //	for (cShapeLine *m : dialDir) {
-	for (cMesh *m : lockDials) {
+	for (cMesh *m : lockDials) 
+	{
 		cVector3d pos(0,0,0);
 		cVector3d ref = (cVector3d(0,.001,0));
 		double px = ref.y();
@@ -1957,14 +2023,15 @@ cVector3d GetSliderValues()
 //	if (wireID <=11 || wireID >=15) return;
 	double interval = 0.0075/6;
 	vector<int> sliderResult;
-	for (cMesh *m : sliderCylinder) 
+	for (cMesh * m : sliderCylinder) 
 	{
 		int result = (int)(((m->getLocalPos().x())+0.0064)/interval);
 		sliderResult.push_back(result);
 	}
 	int i=0;
-	for (cMesh *m : sliderValue) {
-		m->m_texture = numberTextures[sliderMixedValues[i][sliderResult[i]]];
+	for (cMesh * m : sliderValue) {
+		m->m_texture = digitalNumberTextures[sliderMixedValues[i][sliderResult[i]]];
+		m->setUseTransparency(true);
 //		cout << sliderMixedValues[i][sliderResult[i]]<<endl;
 		i++;
 	}
@@ -1974,26 +2041,32 @@ cVector3d GetSliderValues()
 //	cout << endl;
 }
 
-void updateNumPadScreen(int i) {
-	if (i == 10 && numPadEntry.size() > 0) {
+void UpdateNumPadScreen(int i) {
+	if (i == 10) {
+		if (numPadEntry.size() <= 0) return;
 //		NumScreen[numPadEntry.size()-1]->m_texture = numberTextures[0];
 		NumScreen[numPadEntry.size()-1]->m_material->setBlack();
 		numPadEntry.erase(numPadEntry.begin()+numPadEntry.size()-1, numPadEntry.begin()+numPadEntry.size());
 		
 	}
-	else if (i == 11) {
+	else if (i == 11) 
+	{
 		bool correct = true;
 		if (numPadEntry.size() < 6)
 			correct = false;
-		else {
-			for (int j=0; j<6; j++) {
-				if (numPadEntry[j] != numPadPW[j]) {
+		else 
+		{
+			for (int j=0; j<6; j++) 
+			{
+				if (numPadEntry[j] != numPadPW[j]) 
+				{
 					correct = false;
 					break;
 				}
 			}
 		}
-		if (correct) {
+		if (correct) 
+		{
 			correctPW = true;
 			covers[0]->coverUnlocked = true;
 			for(int j=0; j<numPadEntry.size(); j++)
@@ -2001,7 +2074,8 @@ void updateNumPadScreen(int i) {
 				NumScreen[j]->m_material->setGreen();
 			cout << "access granted\n";
 		}
-		else {
+		else 
+		{
 			for(int j=0; j<numPadEntry.size(); j++)
 //				NumScreen[j]->m_texture = numberTextures[0];
 				NumScreen[j]->m_material->setBlack();
@@ -2010,9 +2084,9 @@ void updateNumPadScreen(int i) {
 		}
 	}
 	else {
-		if (numPadEntry.size()<6) {
+		if (numPadEntry.size() < 6) 
+		{
 			numPadEntry.push_back(i);
-//			NumScreen[numPadEntry.size()-1]->m_texture = numberTextures[1];
 			NumScreen[numPadEntry.size()-1]->m_material->setWhite();
 		}
 	}
@@ -2021,7 +2095,7 @@ void updateNumPadScreen(int i) {
 //	cout << endl;
 }
 
-void printAnswers()
+void PrintAnswers()
 {
 	cout << "wireOrder : ";
 	for (int i : brailleOrder)
@@ -2104,7 +2178,7 @@ int main(int argc, char* argv[])
         glfwWindowHint(GLFW_STEREO, GL_FALSE);
     }
 
-    window = glfwCreateWindow(w, h, "Force Shading & Haptic Textures (Teresa Van)", NULL, NULL);
+    window = glfwCreateWindow(w, h, "Haptical Boom", NULL, NULL);
     if (!window)
     {
         cout << "failed to create window" << endl;
@@ -2148,8 +2222,8 @@ int main(int argc, char* argv[])
     camera->setStereoEyeSeparation(0.01);
     camera->setStereoFocalLength(0.5);
     camera->setMirrorVertical(mirroredDisplay);
-
-   ///////////////////////////////////////////////////
+   
+	///////////////////////////////////////////////////
 
     light = new cSpotLight(world);
     world->addChild(light);
@@ -2254,13 +2328,13 @@ int main(int argc, char* argv[])
 		occupiedPanels.push_back(i);
 	
 	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
+    CreateNumberTextures();
 
     // Wires
     CreateWires();
     CreateCutWires();
 
     // Timer
-    CreateNumberTextures();
     CreateTimer();
     UpdateTimer();
 
@@ -2294,7 +2368,7 @@ int main(int argc, char* argv[])
 	FillGridColors();
 	
 	for (cMesh * c : sliderCylinder)
-		setCellColor(c, randomColor);
+		SetCellColor(c, randomColor);
 
     // End game
     CreateEndGameScreens();
@@ -2303,7 +2377,7 @@ int main(int argc, char* argv[])
     SetPanelPositions();
     
 //    cout << dialOrder << endl;
-    printAnswers();
+    PrintAnswers();
     
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -2636,7 +2710,7 @@ void updateHaptics(void)
 				bool curNumButton = CheckButton(numPadNumbers[i], timeInterval, 19+i);
 				if (curNumButton != oldNumButton[i]) {
 					if (!oldNumButton[i] && curNumButton && !correctPW) {
-						updateNumPadScreen(indexNumPadMap[i]);
+						UpdateNumPadScreen(indexNumPadMap[i]);
 	//					cout << indexNumPadMap[i] << " pressed\n";
 					}
 	//				else {
