@@ -473,6 +473,9 @@ int panelOrderPuzzlesValues[4] = {5,6,8,9};
 vector<cMesh*> slidingPictures;
 vector<pbutton*> colorButtons;
 vector<bool> colorLights;
+vector<cMesh*> colorMeshes;
+int msCount = 0;
+cMesh* ssIndicatorLight;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -1176,6 +1179,7 @@ void CreatePicturePuzzle()
 	cVector3d gapx(0,0.0048,0);
 	cVector3d gapy(0.0048,0,0);
 	cVector3d gapz(0, 0, 0.000001);
+//	cVector3d gapz(0, 0, 0.000000);
 
 	int count = 1;
 
@@ -1193,7 +1197,7 @@ void CreatePicturePuzzle()
 			mesh->addChild(bg);
 			
 			cMesh * mv = new cMesh();
-			cCreatePlane(mv, 0.0041, 0.0041, cVector3d(0,0,0));
+			cCreatePlane(mv, 0.0041, 0.0041, cVector3d(0,0,0.00001));
 			mv->m_material->setWhite();
 			mv->m_texture = picturePuzzleTextures[i * 3 + j];
 			mv->setUseTexture(true);
@@ -1459,7 +1463,7 @@ void CreateScratchAndWin()
     material->m_height_map = heightMap;
     material->m_roughness_map = roughnessMap;
     material->hasTexture = true;
-    material->id = 41;
+    material->id = 45;
 
 	scratchSurface->setUseTexture(true);
 
@@ -1935,9 +1939,24 @@ void CreateSimonSaysPuzzle()
 		edge->addChild(b->msphere);
 		
 		colorButtons.push_back(o);
+		colorMeshes.push_back(b->msphere);
 		colorLights.push_back(false);
 	}
 	
+	ssIndicatorLight = new cMesh();
+    cCreateSphere(ssIndicatorLight, 0.002, 10, 5);
+	ssIndicatorLight->setLocalPos(0.0005, 0.006, 0.006);
+	ssIndicatorLight->createAABBCollisionDetector(toolRadius);
+	ssIndicatorLight->computeBTN();
+	ssIndicatorLight->m_material = MyMaterial::create();
+	ssIndicatorLight->m_material->setGrayDim();
+	ssIndicatorLight->m_material->setUseHapticShading(true);
+	ssIndicatorLight->setStiffness(800.0, true);
+	ssIndicatorLight->m_material->setHapticTriangleSides(true, true);
+	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(ssIndicatorLight->m_material);
+	material0->hasTexture = false;
+
+	panels[occupiedPanels[5]]->addChild(ssIndicatorLight);
 	panels[occupiedPanels[5]]->addChild(edge);
 }
 
@@ -2339,8 +2358,9 @@ void UpdateNumPadScreen(int i) {
 								
 void UpdateSlidingPictures(double timeInterval)
 {
+
 	cMesh *m;
-	if (wireID > 30 && wireID < 41) m = slidingPictures[wireID-31];
+	if (wireID > 30 && wireID < 40) m = slidingPictures[wireID-31];
 	else return;
 
 	if (fabs(contactForce.x()) > 0.2) 
@@ -2358,6 +2378,208 @@ void UpdateSlidingPictures(double timeInterval)
 		cVector3d p(px,py,pz);
 		
 		m->setLocalPos(p);
+	}
+}
+
+
+bool SSsequenceStart = false;
+bool SSsequenceSimon = false;
+//bool SSsequenceEntry = false;
+vector<vector<int>> sequence;
+int SSorder[8] = {0,1,2,3,0,1,2,3};
+int ssRound = 0;
+int ssSequenceIndex = 0;
+int extCount = 0;
+vector<int> ssEntry;
+int ssSequenceEntry = 0;
+void GenerateSimonSaysSequences() {
+	for (int i=0; i<3; i++) {
+		vector<int> tempOrder = Random(4, true);
+		vector<int> tempOrder1 = Random(4, true);
+		tempOrder.insert(tempOrder.end(), tempOrder1.begin(), tempOrder1.end());
+		vector<int>	tempSeq;
+		for (int j=0; j<(4+i*2); j++) {
+			tempSeq.push_back(tempOrder[j]);
+		}
+		sequence.push_back(tempSeq);
+	}
+	
+	for (vector<int> list : sequence) {
+		for (int v : list)
+			cout << v;
+		cout << endl;
+	}
+}
+
+
+void SimonSaysLogic()
+{
+	if (SSsequenceSimon) {
+		if (extCount != msCount) {
+		if (msCount%2 == 0)
+			colorLights[sequence[ssRound][ssSequenceIndex]] = true;
+		else {
+			colorLights[sequence[ssRound][ssSequenceIndex]] = false;
+			ssSequenceIndex++;
+		}
+		}
+		if (ssSequenceIndex >= ssRound*2+4) {
+			SSsequenceSimon = false;
+			SSsequenceStart = true;
+		}
+	}
+	else {
+		if (extCount != msCount) {
+		if (SSsequenceStart) {
+			if (ssEntry.size()>0) {
+				if (sequence[ssRound][ssSequenceEntry] != ssEntry[ssSequenceEntry]) 
+					cout << "bad" << endl;
+				else if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) 
+					cout << "good" << endl;
+/*				if (sequence[ssRound][ssSequenceEntry] != ssEntry[ssSequenceEntry]) {
+					ssEntry.clear();
+					SSsequenceStart = false;
+					ssSequenceEntry = 0;
+				}
+				else if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) {
+					ssSequenceEntry++;
+				}
+				if (ssSequenceEntry >= ssRound*2+4) {
+					cout <<"round " << ssRound << "cleared" << endl;
+					ssRound++;
+					SSsequenceStart = false;
+				}*/
+			}
+			
+		}
+		else {
+			int s = timeLimit[2]*10+timeLimit[3];
+			if (s%2==0) colorLights[sequence[ssRound][0]] = true;
+			else colorLights[sequence[ssRound][0]] = false;
+		}
+		
+	}
+	
+}
+	
+////////// flashing slow for not started
+
+
+/////// flashing fast for sequence
+
+//	if (msCount%2==0) colorLights[0] = true;
+//	else colorLights[0] = false;
+	
+//////// Tracking input
+/*	if (!SSsequenceSimon) {
+	for (int i=0; i<4; i++) {
+		pbutton* b = colorButtons[i];
+				
+		bool curNumButton = CheckButton(colorButtons[i], dt, 40 + i);
+		if (curNumButton != colorLights[i]) {
+			if (!colorLights[i] && curNumButton) {
+				if (!SSsequenceStart && i == sequence[ssRound][0]) {
+					ssSequenceIndex=0;
+					ssRound = 0;
+					colorLights[sequence[0][0]] = false;
+					SSsequenceSimon = true;
+					continue;
+				}
+//				colorLights[i] = true;
+			}
+			else {
+//				colorLights[i] = false;
+			}
+		}
+	}
+}
+else {
+		if (msCount%2==0) {
+		cout << "simon" << ssSequenceIndex << endl;
+		ssSequenceIndex++;
+	}
+		if (ssSequenceIndex >= ssRound*2+4)
+		SSsequenceSimon = false;
+			
+}*/
+////////////////
+	
+}
+
+void UpdateSimonSays() 
+{
+//	if (SSsequenceSimon) {
+		
+/*		if (msCount%2==0) colorLights[sequence[ssRound][ssSequenceIndex]] = true;
+		else {colorLights[sequence[ssRound][ssSequenceIndex]] = false;
+		ssSequenceIndex++;}
+		if (ssSequenceIndex >= sequence[ssRound].size()-1)
+			SSsequenceSimon = false;
+			*/
+/*		
+		cout << "simon" << ssSequenceIndex << endl;
+		ssSequenceIndex++;
+		if (ssSequenceIndex >= ssRound*2+4)
+		SSsequenceSimon = false;
+		
+	}
+	else {*/
+/*		if (!SSsequenceStart && !SSsequenceSimon) {
+			int s = timeLimit[2]*10+timeLimit[3];
+			if (s%2==0) colorLights[sequence[0][0]] = true;
+			else colorLights[sequence[0][0]] = false;
+		}
+		else {
+			
+		}
+//	}*/
+/*	if (SSsequenceSimon) cout << "simon" << endl;
+	else {
+		if (SSsequenceStart) cout << "you" << endl;
+		else cout << "not started" << endl;
+	}
+*/
+	for (int i=0; i<4; i++) {
+		pbutton* b = colorButtons[i];
+		cMesh *m = colorMeshes[i];
+		
+		
+		if (colorLights[i]) {
+			switch(i) {
+				case 0:
+					m->m_material->setBlueLight();
+					break;
+				case 1:
+					m->m_material->setPink();
+					break;
+				case 2:
+					m->m_material->setGreenLight();
+					break;
+				case 3:
+					m->m_material->setYellowLight();
+					break;
+				default:
+				break;
+			}
+		}
+		else {
+			switch(i) {
+				case 0:
+					m->m_material->setBlue();
+					break;
+				case 1:
+					m->m_material->setRed();
+					break;
+				case 2:
+					m->m_material->setGreen();
+					break;
+				case 3:
+					m->m_material->setYellow();
+					break;
+				default:
+				break;
+			}
+		}
 	}
 }
 
@@ -2639,6 +2861,7 @@ int main(int argc, char* argv[])
 	
 	CreatePicturePuzzle();
 	CreateSimonSaysPuzzle();
+	GenerateSimonSaysSequences();
 	
 	for (cMesh * c : sliderCylinder)
 		SetCellColor(c, randomColor);
@@ -2665,6 +2888,7 @@ int main(int argc, char* argv[])
     
     cPrecisionClock clock;
     startTime = clock.getCPUTimeSeconds();
+    double startTimeMS = clock.getCPUTimeSeconds();
 
     windowSizeCallback(window, width, height);
 
@@ -2673,8 +2897,14 @@ int main(int argc, char* argv[])
         if (!gameOver && gameStarted)
         {
             double previousTime = clock.getCPUTimeSeconds();
+            double previousTimeMS = clock.getCPUTimeSeconds();
             double deltaTime = previousTime - startTime;
+            double deltaTimeMS = previousTimeMS - startTimeMS;
             // cout << deltaTime << "\n";
+            if (deltaTimeMS >=0.5) {
+				startTimeMS = previousTimeMS;
+				msCount++;
+			}
             if (deltaTime >= 1)
             {
                 UpdateTimeElapsed();
@@ -2682,7 +2912,8 @@ int main(int argc, char* argv[])
                 startTime = previousTime;
                 if (indicatorCD > 0) 
 					indicatorCD--;
-            }
+			}
+            
         }
 
         glfwGetWindowSize(window, &width, &height);
@@ -2858,10 +3089,12 @@ void updateHaptics(void)
 	vector<bool> oldColButton;
 	for (int i=0; i<4; i++)
 		oldColButton.push_back(false);
+	vector<bool> oldSSButton;
+	for (int i=0; i<4; i++)
+		oldSSButton.push_back(false);
 
     cPrecisionClock clock;
     clock.reset();
-
 
     while(simulationRunning)
     {
@@ -3006,18 +3239,38 @@ void updateHaptics(void)
 					if (curNumButton != oldNumButton[i]) {
 						if (!oldNumButton[i] && curNumButton && !correctPW) {
 							UpdateNumPadScreen(indexNumPadMap[i]);
-							//					cout << indexNumPadMap[i] << " pressed\n";
 						}
-		//				else {
-		//					cout << indexNumPadMap[i] << " released\n";
-		//				}
 					}
 					oldNumButton[i] = curNumButton;
 				}
+				
 				for (int i = 0; i < 4; i++) {
 					bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
+					if (curNumButton != oldSSButton[i]) {
+						if (!oldSSButton[i] && curNumButton) {
+							if (i == sequence[ssRound][0] && !SSsequenceStart)
+								SSsequenceSimon = true;
+							if (SSsequenceStart) {
+								colorLights[sequence[ssRound][ssSequenceEntry]] = true;
+								ssEntry.push_back(i);
+							}
+//								SimonSaysLogic(i);
+							for(int i : ssEntry)
+								cout << i;
+							cout << endl;
+						}
+						
+					}
+					else {
+						if (SSsequenceStart) 
+								colorLights[sequence[ssRound][ssSequenceEntry]] = false;
+					}
+					oldSSButton[i] = curNumButton;
+				}
+/*				for (int i = 0; i < 4; i++) {
+					bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
 					if (curNumButton != oldColButton[i]) {
-						if (!oldColButton[i] && curNumButton && !correctPW) {
+						if (!oldColButton[i] && curNumButton) {
 //							UpdateNumPadScreen(indexNumPadMap[i]);
 							//					cout << indexNumPadMap[i] << " pressed\n";
 						}
@@ -3027,6 +3280,7 @@ void updateHaptics(void)
 					}
 					oldColButton[i] = curNumButton;
 				}
+				*/
 			}
 
 
@@ -3053,9 +3307,16 @@ void updateHaptics(void)
 
 		   CheckSlider(timeInterval);
 		   cVector3d sliderResults =  GetSliderValues(); 
-		   UpdateSlidingPictures(timeInterval);
-	   }
+		   
+			UpdateSlidingPictures(timeInterval);
 
+//		   SimonSaysLogic(timeInterval);
+			SimonSaysLogic();
+		   UpdateSimonSays();
+		   extCount = msCount;
+		   
+	   }
+	   
         freqCounterHaptics.signal(1);
     }
 
