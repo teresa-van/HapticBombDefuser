@@ -230,6 +230,42 @@ pbutton *lockbutton;
 
 ///////////////////////////////////////////////////
 
+vector<cTexture2dPtr> picturePuzzleTextures;
+const string picturePuzzleTextureFiles[9] =
+{
+	"pp1.png",
+	"pp2.png",
+	"pp3.png",
+	"pp4.png",
+	"pp5.png",
+	"pp6.png",
+	"pp7.png",
+	"pp8.png",
+	"pp9.png",
+};
+
+vector<cTexture2dPtr> otherTextures;
+const string otherTextureFiles[13] =
+{
+	"red.png",
+	"green.png",
+};
+
+vector<cTexture2dPtr> picturePuzzleNumberTextures;
+const string picturePuzzleNumberTextureFiles[10] =
+{
+	"ppn0.png",
+	"ppn1.png",
+	"ppn2.png",
+	"ppn3.png",
+	"ppn4.png",
+	"ppn5.png",
+	"ppn6.png",
+	"ppn7.png",
+	"ppn8.png",
+	"ppn9.png",
+};
+
 vector<cTexture2dPtr> generalNumberTextures;
 const string generalNumberTextureFiles[13] =
 {
@@ -1136,24 +1172,32 @@ void CreatePicturePuzzle()
 	cVector3d startPos(-0.0048, -0.0048,0.001);
 	cVector3d gapx(0,0.0048,0);
 	cVector3d gapy(0.0048,0,0);
+	cVector3d gapz(0, 0, 0.000001);
+
+	int count = 1;
+
 	for (int i=0; i<3; i++) {
 		vector<cMesh*> tempVector;
 		for (int j=0; j<3; j++) {
 			cMesh * bg = new cMesh();
-			cCreatePlane(bg, 0.0044, 0.0044,startPos+i*gapy+j*gapx);
+			cCreatePlane(bg, 0.0044, 0.0044,cVector3d(0,0,0));
 			if (i<2)
 				bg->m_material->setWhite();
 			else
 				bg->m_material->setGray();
-				
+			
+			bg->setLocalPos(startPos + i * gapy + j * gapx);
 			mesh->addChild(bg);
 			
 			cMesh * mv = new cMesh();
-			cCreatePlane(mv, 0.0041, 0.0041,startPos+i*gapy+j*gapx + cVector3d(0,0,0.0001));
-			mv->m_material->setRed();
+			cCreatePlane(mv, 0.0041, 0.0041, cVector3d(0,0,0));
+			mv->m_material->setWhite();
+			mv->m_texture = picturePuzzleTextures[i * 3 + j];
+			mv->setUseTexture(true);
 			
 			cMesh * mv0 = new cMesh();
-			cCreatePlane(mv0, 0.0041, 0.0041,startPos+i*gapy+j*gapx + cVector3d(0,0,0.0001));
+			cCreatePlane(mv0, 0.0041, 0.0041, cVector3d(0, 0, 0));
+			mv0->setLocalPos(startPos + i * gapy + j * gapx + count * gapz);
 			mv0->m_material->setWhite();
 
 
@@ -1168,13 +1212,10 @@ void CreatePicturePuzzle()
 			mv0->m_material->setUseHapticShading(true);
 			mv0->setStiffness(2000.0, true);
 			mv0->setFriction(3.5, 1.5);
-
 			MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mv0->m_material);
-
-			mv0->m_texture = generalNumberTextures[i*3+j];
+			mv0->m_texture = picturePuzzleNumberTextures[i*3+j];
 			material->hasTexture = false;
 			material->id = 31+i*3+j;
-
 			mv0->setUseTexture(true);
 
 			mv0->addChild(mv);
@@ -1182,7 +1223,7 @@ void CreatePicturePuzzle()
 
 			slidingPictures.push_back(mv0);
 //			tempVector.push_back(mv);
-
+			count++;
 
 		}
 //		cells.push_back(tempVector);
@@ -1808,6 +1849,29 @@ void CreateSliderPuzzle()
 	
 }
 
+void CreateOtherTextures()
+{
+	for (string s : otherTextureFiles)
+	{
+		cTexture2dPtr tex = cTexture2d::create();
+		tex->loadFromFile("textures/" + s);
+		tex->setWrapModeS(GL_REPEAT);
+		tex->setWrapModeT(GL_REPEAT);
+		tex->setUseMipmaps(true);
+		otherTextures.push_back(tex);
+	}
+
+	for (string s : picturePuzzleTextureFiles)
+	{
+		cTexture2dPtr tex = cTexture2d::create();
+		tex->loadFromFile("textures/" + s);
+		tex->setWrapModeS(GL_REPEAT);
+		tex->setWrapModeT(GL_REPEAT);
+		tex->setUseMipmaps(true);
+		picturePuzzleTextures.push_back(tex);
+	}
+}
+
 void CreateNumberTextures()
 {
     for (string s : timerNumberTextureFiles)
@@ -1838,6 +1902,16 @@ void CreateNumberTextures()
 		tex->setWrapModeT(GL_REPEAT);
 		tex->setUseMipmaps(true);
 		digitalNumberTextures.push_back(tex);
+	}
+
+	for (string s : picturePuzzleNumberTextureFiles)
+	{
+		cTexture2dPtr tex = cTexture2d::create();
+		tex->loadFromFile("textures/" + s);
+		tex->setWrapModeS(GL_REPEAT);
+		tex->setWrapModeT(GL_REPEAT);
+		tex->setUseMipmaps(true);
+		picturePuzzleNumberTextures.push_back(tex);
 	}
 }
 
@@ -1897,6 +1971,7 @@ void UpdateTimer()
     if (timeLimit[0] < 0)
     {
         GameOver(false);
+		return;
     }
 
     int i = 0;
@@ -2149,7 +2224,7 @@ void UpdateNumPadScreen(int i) {
 			correct = false;
 		else 
 		{
-			for (int j=0; j<6; j++) 
+			for (int j = 0; j < 6; j++) 
 			{
 				if (numPadEntry[j] != numPadPW[j]) 
 				{
@@ -2162,18 +2237,23 @@ void UpdateNumPadScreen(int i) {
 		{
 			correctPW = true;
 			covers[0]->coverUnlocked = true;
-			for(int j=0; j<numPadEntry.size(); j++)
-//				NumScreen[j]->m_texture = numberTextures[0];
-				NumScreen[j]->m_material->setGreen();
+			for (int j = 0; j < NumScreen.size(); j++)
+			{
+				NumScreen[j]->m_texture = otherTextures[1];
+				NumScreen[j]->m_material->setWhite();
+			}
 			cout << "access granted\n";
 		}
 		else 
 		{
-			for(int j=0; j<numPadEntry.size(); j++)
-//				NumScreen[j]->m_texture = numberTextures[0];
-				NumScreen[j]->m_material->setBlack();
+			for (int j = 0; j < NumScreen.size(); j++)
+			{
+				NumScreen[j]->m_texture = otherTextures[0];
+				NumScreen[j]->m_material->setWhite();
+			}
 			numPadEntry.clear();
 			cout << "invalid password\n";
+			indicatorCD = 3;
 		}
 	}
 	else {
@@ -2187,53 +2267,28 @@ void UpdateNumPadScreen(int i) {
 //		cout << i;
 //	cout << endl;
 }
-
-double xmin[9] = {	0, -0.0048, -0.0096,
-					0, -0.0048, -0.0096,
-					0, -0.0048, -0.0096};
-double xmax[9] = {	0.0096, 0.0048, 0,
-					0.0096, 0.0048, 0,
-					0.0096, 0.0048, 0};
-								
-double ymin[9] = {	-0.0096, -0.0096, -0.0096,
-					-0.0046, -0.0048, -0.0048,
-					0, 0, 0};
-double ymax[9] = {	0, 0, 0,
-					0.0046, 0.0048, 0.0048,
-					0.0096, 0.0096, 0.0096};
-
 								
 void UpdateSlidingPictures(double timeInterval)
 {
 	cMesh *m;
-	if (wireID>30 && wireID<41) m = slidingPictures[wireID-31];
+	if (wireID > 30 && wireID < 41) m = slidingPictures[wireID-31];
 	else return;
-	// cf.x = z cf.y = x cf.z = y
-	if (fabs(contactForce.x()) > 0.2) {
-//		double px = cClamp(xmin[wireID-31], xmax[wireID-31], m->getLocalPos().x() + contactForce.z() * 0.00001);
-//		double py = cClamp(ymin[wireID-31], ymax[wireID-31], m->getLocalPos().y() - contactForce.y() * 0.00001);
-//		double pz = m->getLocalPos().z();
+
+	if (fabs(contactForce.x()) > 0.2) 
+	{
 		double px = m->getLocalPos().x() + contactForce.z() * 0.0001;
 		double py = m->getLocalPos().y() - contactForce.y() * 0.0001;
 		double pz = m->getLocalPos().z();
+
+		if (px <= -0.0048 || px >= 0.0048)
+			px = m->getLocalPos().x();
+
+		if (py <= -0.0048 || py >= 0.0048)
+			py = m->getLocalPos().y();
 		
-		if (px <= ymin[wireID-31]*1.5 && px >= ymax[wireID-31]*1.5) {
-			px =0;
-		}
-//		if (py <= xmin[wireID-31] && py >= xmax[wireID-31]) {
-//			py = 0;
-//		}
-		
-			
 		cVector3d p(px,py,pz);
 		
-//		cGenericObject *m0 = m->getParent();
-//		m0->removeChild(m);
-//		cout << m->getGlobalPos() << endl;
-//		m0->addChild(m);
 		m->setLocalPos(p);
-//		cVector3d p = m->getLocalPos()+cVector3d(contactForce.z(),-contactForce.y(),contactForce.x()*0)*0.00001
-//		m->setLocalPos(m->getLocalPos()+cVector3d(contactForce.z(),-contactForce.y(),contactForce.x()*0)*0.00001);
 	}
 }
 
@@ -2468,10 +2523,11 @@ int main(int argc, char* argv[])
     CreateBomb();
     CreatePanels();
 
-	for (int i=0; i<11; i++)
+	for (int i = 0; i < 11; i++)
 		occupiedPanels.push_back(i);
 	
     CreateNumberTextures();
+	CreateOtherTextures();
 //	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
 
     // Wires
@@ -2845,8 +2901,15 @@ void updateHaptics(void)
 						}
 					}
 				}
-				if (indicatorCD == 1) {
+				if (indicatorCD == 1) 
+				{
 					bigButtonIndicator->m_material->setGrayDim();
+
+					for (int j = 0; j < NumScreen.size(); j++)
+					{
+						NumScreen[j]->m_texture = generalNumberTextures[12];
+						NumScreen[j]->m_material->setBlack();
+					}
 				}
 
 				oldButton0 = curButton0;
