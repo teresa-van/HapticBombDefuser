@@ -33,7 +33,7 @@ extern cVector3d returnForce(0,0,0);
 struct particle;
 struct spring;
 struct pbutton;
-struct cover;
+struct Cover;
 
 struct particle 
 {
@@ -331,12 +331,13 @@ float coverAngle = 0;
 bool coverUnlocked = false;
 */
 
-struct cover {
+struct Cover 
+{
 	cMultiMesh * mesh;
 	float coverAngle;
 	bool coverUnlocked;
 };
-vector<cover*> covers;
+vector<Cover*> covers;
 
 vector<pbutton *> numPadNumbers;
 int indexNumPadMap[12] = {	1, 2, 3, 10,
@@ -388,11 +389,10 @@ void setCellColor(cMesh *m, int i)
 	}
 }	
 
-
 //vector<int> panelOrder;// {0,1,2,3,4,5,6,7,8,9,10};
 vector<int> panelOrderBigButton;// = {1,2,4};
 vector<int> panelOrderClues;// {0,1,7,10};
-vector<int> panelOrderPuzzels;// = {1,2,4,5,6,8,9};
+vector<int> panelOrderPuzzles;// = {1,2,4,5,6,8,9};
 vector<int> occupiedPanels;
 int panelOrderBigButtonValues[3] = {1,2,4};
 int panelOrderCluesValues[4] = {0,3,7,10};
@@ -447,7 +447,7 @@ void RandomizePanelPreferences() {
 
 	vector<int> randomPVs0 = Random(6);
 	for (int i: randomPVs0)
-		panelOrderPuzzels.push_back(panelOrderPuzzels0[i]);
+		panelOrderPuzzles.push_back(panelOrderPuzzels0[i]);
 
 	for (int i:panelOrderBigButton)
 		cout << i;
@@ -455,7 +455,7 @@ void RandomizePanelPreferences() {
 	for (int i:panelOrderClues)
 		cout << i;
 	cout << endl;
-	for (int i:panelOrderPuzzels)
+	for (int i:panelOrderPuzzles)
 		cout << i;
 	cout << endl;
 
@@ -463,14 +463,14 @@ void RandomizePanelPreferences() {
 
 	occupiedPanels.push_back(panelOrderClues[0]);
 	occupiedPanels.push_back(panelOrderBigButton[0]);
-	occupiedPanels.push_back(panelOrderPuzzels[0]);
+	occupiedPanels.push_back(panelOrderPuzzles[0]);
 	occupiedPanels.push_back(panelOrderClues[1]);
-	occupiedPanels.push_back(panelOrderPuzzels[1]);
-	occupiedPanels.push_back(panelOrderPuzzels[2]);
-	occupiedPanels.push_back(panelOrderPuzzels[3]);
+	occupiedPanels.push_back(panelOrderPuzzles[1]);
+	occupiedPanels.push_back(panelOrderPuzzles[2]);
+	occupiedPanels.push_back(panelOrderPuzzles[3]);
 	occupiedPanels.push_back(panelOrderClues[2]);
-	occupiedPanels.push_back(panelOrderPuzzels[4]);
-	occupiedPanels.push_back(panelOrderPuzzels[5]);
+	occupiedPanels.push_back(panelOrderPuzzles[4]);
+	occupiedPanels.push_back(panelOrderPuzzles[5]);
 	occupiedPanels.push_back(panelOrderClues[3]);
 
 	for (int i:occupiedPanels)
@@ -595,6 +595,43 @@ void CreateEnvironment()
     world->addChild(table);
 }
 
+Cover * CreateCover()
+{
+	Cover * c = new Cover();
+	c->mesh = new cMultiMesh();
+	c->mesh->loadFromFile("models/wirecover.obj");
+	c->mesh->createAABBCollisionDetector(toolRadius);
+	c->mesh->computeBTN();
+
+	cMesh* mesh = c->mesh->getMesh(0);
+	mesh->m_material = MyMaterial::create();
+	mesh->m_material->setGrayDarkSlate();
+	mesh->m_material->setUseHapticShading(true);
+	c->mesh->setStiffness(2000.0, true);
+
+	cTexture2dPtr albedoMap = cTexture2d::create();
+	albedoMap->loadFromFile("textures/wirecover.png");
+	albedoMap->setWrapModeS(GL_REPEAT);
+	albedoMap->setWrapModeT(GL_REPEAT);
+	albedoMap->setUseMipmaps(true);
+	mesh->m_texture = albedoMap;
+	mesh->setUseTexture(true);
+	mesh->setUseTransparency(false);
+
+	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
+	material->hasTexture = false;
+	material->id = 15 + covers.size();
+
+	c->mesh->setLocalPos(cVector3d(0.0018, -0.0078, -0.0005));
+	c->mesh->rotateAboutGlobalAxisRad(cVector3d(0, 0, 1), cDegToRad(90));
+
+	c->coverAngle = 0;
+	c->coverUnlocked = false;
+	covers.push_back(c);
+
+	return c;
+}
+
 void CreateBomb()
 {
     bomb = new cMultiMesh();
@@ -661,6 +698,9 @@ void CreateWires()
     base->setLocalPos(cVector3d(0.0005, 0.001, 0.0005));
     base->rotateAboutGlobalAxisRad(cVector3d(0,0,-1), cDegToRad(90));
 //    panels[0]->addChild(base);
+
+	Cover * cover = CreateCover();
+	panels[occupiedPanels[0]]->addChild(cover->mesh);
     panels[occupiedPanels[0]]->addChild(base);
 
     double posX = -0.0035;
@@ -720,53 +760,6 @@ void CreateCutWires()
     }
 }
 
-void CreateWireCover()
-{
-	for (int i=0; i<4; i++) {
-		cover * c = new cover();
-		c->mesh = new cMultiMesh();
-		c->mesh->loadFromFile("models/wirecover.obj");
-		c->mesh->createAABBCollisionDetector(toolRadius);
-		c->mesh->computeBTN();
-
-		cMesh* mesh = c->mesh->getMesh(0);
-		mesh->m_material = MyMaterial::create();
-		mesh->m_material->setGrayDarkSlate();
-		mesh->m_material->setUseHapticShading(true);
-		c->mesh->setStiffness(2000.0, true);
-
-		cTexture2dPtr albedoMap = cTexture2d::create();
-		albedoMap->loadFromFile("textures/wirecover.png");
-		albedoMap->setWrapModeS(GL_REPEAT);
-		albedoMap->setWrapModeT(GL_REPEAT);
-		albedoMap->setUseMipmaps(true);
-		mesh->m_texture = albedoMap;
-		mesh->setUseTexture(true);
-		mesh->setUseTransparency(false);
-
-		MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
-		material->hasTexture = false;
-		material->id = 15+i;
-		
-		c->mesh->setLocalPos(cVector3d(0.0018, -0.0078, -0.0005));
-		
-		c->mesh->rotateAboutGlobalAxisRad(cVector3d(0,0,1), cDegToRad(90));
-		
-		if (i==0) {
-			panels[0]->addChild(c->mesh);
-//			mesh->setUseTransparency(true);
-		}
-		if (i==1) panels[3]->addChild(c->mesh);
-		if (i==2) panels[7]->addChild(c->mesh);
-		if (i==3) panels[10]->addChild(c->mesh);
-		c->coverAngle = 0;
-		c->coverUnlocked = false;
-		if (i==2) c->coverUnlocked = true;
-
-		covers.push_back(c);
-	}
-}
-
 void FillGridColors() 
 {
 	vector<int> tempOrder = Random(6);
@@ -811,6 +804,8 @@ void CreateGridClue()
 		cells.push_back(tempVector);
 	}
 	
+	Cover * cover = CreateCover();
+	panels[occupiedPanels[10]]->addChild(cover->mesh);
 	panels[occupiedPanels[10]]->addChild(mesh);
 	
 }
@@ -1094,6 +1089,9 @@ void CreateBrailleTextures()
 
 void CreateBraillePuzzle()
 {
+	Cover * cover = CreateCover();
+	panels[occupiedPanels[3]]->addChild(cover->mesh);
+
     cTexture2dPtr btex = cTexture2d::create();
     btex->loadFromFile("textures/brailleEmpty.png");
     btex->setWrapModeS(GL_REPEAT);
@@ -1196,6 +1194,8 @@ void CreateBrailleLegend()
 
 	mesh->setUseTexture(true);
 	
+	Cover * cover = CreateCover();
+	panels[occupiedPanels[7]]->addChild(cover->mesh);
 	panels[occupiedPanels[7]]->addChild(mesh);
 	
 }
@@ -1538,7 +1538,6 @@ void CreateNumberPad() {
 		NumScreen.push_back(md);
 	}
 	
-	
 	panels[occupiedPanels[9]]->addChild(screenblock);
 	
 	cVector3d startPos(0.003,-0.0026,0.0011);
@@ -1810,8 +1809,6 @@ double getCoverAngle(cMesh *m) {
 
 cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval) 
 {
-
-
 //	double timeInterval = 0.001;
 	const double INERTIA = 0.00001;
         const double MAX_ANG_VEL = 5.0;
@@ -1819,14 +1816,14 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 
         // get position of cursor in global coordinates
         cVector3d toolPos = tool->getDeviceGlobalPos();
-	cMesh *m;
-	if (wireID >8 && wireID <12)
-		m = lockDials[wireID-9];
-//	else if (wireID == 15)
-	else if (wireID > 14 && wireID < 19)
-		m = covers[wireID-15]->mesh->getMesh(0);
-//	else return cVector3d(0,0,0);
-	else return angVel;
+		cMesh *m;
+		if (wireID >8 && wireID <12)
+			m = lockDials[wireID-9];
+	//	else if (wireID == 15)
+		else if (wireID > 14 && wireID < 19)
+			m = covers[wireID-15]->mesh->getMesh(0);
+	//	else return cVector3d(0,0,0);
+		else return angVel;
 
         // get position of object in global coordinates
         cVector3d objectPos = m->getGlobalPos();
@@ -1998,7 +1995,7 @@ void updateNumPadScreen(int i) {
 		}
 		if (correct) {
 			correctPW = true;
-			covers[1]->coverUnlocked = true;
+			covers[0]->coverUnlocked = true;
 			for(int j=0; j<numPadEntry.size(); j++)
 //				NumScreen[j]->m_texture = numberTextures[0];
 				NumScreen[j]->m_material->setGreen();
@@ -2255,12 +2252,12 @@ int main(int argc, char* argv[])
 
 	for (int i=0; i<11; i++)
 		occupiedPanels.push_back(i);
-//	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
+	
+	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
 
     // Wires
     CreateWires();
     CreateCutWires();
-    CreateWireCover();
 
     // Timer
     CreateNumberTextures();
@@ -2627,8 +2624,8 @@ void updateHaptics(void)
 				if (!oldButton1 && curButton1) {
 					cVector3d dialValues = GetDialValues();
 					if (dialValues.x() == dialOrder[0] && dialValues.y() == dialOrder[1] 
-						&& dialValues.z() == dialOrder[2] && !covers[0]->coverUnlocked)
-							covers[0]->coverUnlocked = true; 	// REMEMBER TO CHANGE
+						&& dialValues.z() == dialOrder[2] && !covers[1]->coverUnlocked)
+							covers[1]->coverUnlocked = true; 	// REMEMBER TO CHANGE
 				}
 	//			else
 	//				cout << "released\n";

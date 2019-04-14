@@ -1,19 +1,20 @@
 To Do:
-- change center of wire cover
-- abacus
-- link puzzles together
-- randomize
-- magnet troll puzzle
+ - Fixed seg fault when timer runs out
+ - Number textures
+ - Screen obj
 
 Low priority:
-- round button
-- start screen
+ - start screen
 
 Puzzle sequence:
-- scratch win -> button
-- button -> grid for abacus
-- abacus -> dial lock
-- dial lock -> unlock wire cover
-- braille -> wire sequence
+ - scratch puzzle -> big button
+ - big button -> grid colours
+ - grid colours -> slider
+ - slider -> dial lock
+ - dial lock -> braille puzzle
+ - ? -> number pad
+ - number pad -> wires
+ - ? -> braille legend
 
-- magnet 3x3 -> buttons 3x3 , clear, enter -> troll LED
+
+ cover order: wires, braille puzzle, braille legend, grid
