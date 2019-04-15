@@ -2244,7 +2244,7 @@ cVector3d RotateObjectsWithDevice(cVector3d angVel, double timeInterval)
 void UnlockCover(Cover * cover)
 {
 	cover->coverUnlocked = true;
-	cover->mesh->rotateAboutLocalAxisDeg(cVector3d(0,0,1), -30);
+	cover->mesh->rotateAboutLocalAxisDeg(cVector3d(0,0,1), -20);
 }
 
 cVector3d GetDialValues()
@@ -2489,8 +2489,8 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 //					SSsequenceStart = false;
-					if (ssRound >=1)
-						covers[2]->coverUnlocked = true;
+					if (ssRound >=2)
+						UnlockCover(covers[2]);
 				}
 			}
 			}
