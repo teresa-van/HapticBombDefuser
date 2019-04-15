@@ -2425,13 +2425,14 @@ cVector3d GetSliderValues()
 //	cout << endl;
 }
 
-void UpdateNumPadScreen(int i) {
+void UpdateNumPadScreen(int i) 
+{
 	if (i == 10) {
 		if (numPadEntry.size() <= 0) return;
 //		NumScreen[numPadEntry.size()-1]->m_texture = numberTextures[0];
-		NumScreen[numPadEntry.size()-1]->m_material->setBlack();
-		numPadEntry.erase(numPadEntry.begin()+numPadEntry.size()-1, numPadEntry.begin()+numPadEntry.size());
-		
+		for (cMesh * m : NumScreen)
+			m->m_material->setBlack();
+		numPadEntry.clear();
 	}
 	else if (i == 11) 
 	{
@@ -2475,6 +2476,7 @@ void UpdateNumPadScreen(int i) {
 		}
 	}
 	else {
+		if (indicatorCD > 0) return;
 		if (numPadEntry.size() < 6) 
 		{
 			numPadEntry.push_back(i);
