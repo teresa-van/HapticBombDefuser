@@ -477,6 +477,7 @@ vector<bool> colorLights;
 vector<cMesh*> colorMeshes;
 int msCount = 0;
 cMesh* ssIndicatorLight;
+int ssIndicatorCD = 0;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -2442,6 +2443,7 @@ void GenerateSimonSaysSequences() {
 void SimonSaysLogic()
 {
 	if (SSsequenceSimon) {
+		ssIndicatorLight->m_material->setGrayDark();
 		if (extCount != msCount) {
 		if (msCount%2 == 0)
 			colorLights[sequence[ssRound][ssSequenceIndex]] = true;
@@ -2453,6 +2455,10 @@ void SimonSaysLogic()
 		if (ssSequenceIndex >= ssRound*2+4) {
 			SSsequenceSimon = false;
 			SSsequenceStart = true;
+			ssIndicatorLight->m_material->setYellow();
+			
+			
+
 		}
 	}
 	else {
@@ -2466,6 +2472,8 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 					cout << "bad" << endl;
+					ssIndicatorLight->m_material->setRed();
+					ssIndicatorCD = 3;
 //					extCount = 0;
 				}
 				else {// if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) 
@@ -2489,8 +2497,12 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 //					SSsequenceStart = false;
-					if (ssRound >=2)
+
+					ssIndicatorLight->m_material->setGreen();
+					ssIndicatorCD = 2;
+					if (ssRound >=2) {
 						UnlockCover(covers[2]);
+					}
 				}
 			}
 			}
@@ -2954,6 +2966,8 @@ int main(int argc, char* argv[])
                 startTime = previousTime;
                 if (indicatorCD > 0) 
 					indicatorCD--;
+				if (ssIndicatorCD > 0)
+					ssIndicatorCD--;
 			}
             
         }
@@ -3365,9 +3379,22 @@ void updateHaptics(void)
 		   
 			UpdateSlidingPictures(timeInterval);
 
+
+		
+				
+			if (!covers[2]->coverUnlocked) {
+				SimonSaysLogic();
+				UpdateSimonSays();
+			}
+			else {
+					ssIndicatorLight->m_material->setGreen();
+			}
+			if (ssIndicatorCD == 1 && !covers[2]->coverUnlocked) 
+				ssIndicatorLight->m_material->setGrayDim();
+
 //		   SimonSaysLogic(timeInterval);
-			SimonSaysLogic();
-		   UpdateSimonSays();
+//			SimonSaysLogic();
+//		   UpdateSimonSays();
 		   extCount = msCount;
 		   
 	   }
