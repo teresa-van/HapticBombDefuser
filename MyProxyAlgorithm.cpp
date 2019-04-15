@@ -175,7 +175,7 @@ void MyProxyAlgorithm::updateForce()
                 // paint color at tool position
                 const double K_INK = 30;
                 const double K_SIZE = 10;
-                const int BRUSH_SIZE = 25;
+                const int BRUSH_SIZE = 50;
                 // double timeInterval = 1.0/100.0;
 
                 double size = cClamp(K_SIZE * force.length(), 1.0, (double)(BRUSH_SIZE));

@@ -28,7 +28,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 int timeLimit[4] = { 9,9,5,9 }; // mm:ss
 bool gameStarted = false;
-
+bool enableStrikes = true;
 extern int wireID = 6;
 extern cVector3d contactForce(0,0,0);
 extern cVector3d returnForce(0,0,0);
@@ -308,7 +308,7 @@ const string digitalNumberTextureFiles[10] =
 #endif
 
 vector<cTexture2dPtr> timerNumberTextures;
-const string timerNumberTextureFiles[13] = 
+const string timerNumberTextureFiles[14] = 
 {
     "0.png",
     "1.png",
@@ -323,6 +323,7 @@ const string timerNumberTextureFiles[13] =
     "dots.png",
 	"nostrike.png",
 	"strike.png",
+	"strikedisabled.png",
 };
 
 vector<cMesh*> strikePlanes;
@@ -593,8 +594,24 @@ void GameOver(bool win)
         world->addChild(deathScreen);
 }
 
+void ToggleStrikes()
+{
+	if (!enableStrikes)
+		for (cMesh * s : strikePlanes)
+			s->m_texture = timerNumberTextures[13];
+	else
+	{
+		for (cMesh * s : strikePlanes)
+			s->m_texture = timerNumberTextures[11];
+		for (int i = 0; i < strikes; i++)
+			strikePlanes[i]->m_texture = timerNumberTextures[12];
+	}
+}
+
 void Strike()
 {
+	if (!enableStrikes) return;
+
 	strikePlanes[strikes]->m_texture = timerNumberTextures[12];
 	strikes += 1;
 	if (strikes == 3)
@@ -710,6 +727,34 @@ void CreateEnvironment()
     material->hasTexture = true;
     table->setUseTexture(true);
 
+	cMesh * picture = new cMesh();
+	//cCreatePlane(picture, 0.02, 0.02, cVector3d(0.04, -0.015, -0.03));
+	//cCreatePlane(picture, 0.02, 0.02, cVector3d(0.0, -0.0, -0.0265));
+	cCreatePlane(picture, 0.02, 0.02);
+	picture->createBruteForceCollisionDetector();
+	//picture->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+	picture->setLocalPos(cVector3d(0.015, 0.04, -0.027));
+	picture->rotateAboutGlobalAxisDeg(cVector3d(0, 0, 1), 45);
+	picture->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 10);
+
+	albedoMap = cTexture2d::create();
+	albedoMap->loadFromFile("textures/picturepuzzle.png");
+	albedoMap->setWrapModeS(GL_REPEAT);
+	albedoMap->setWrapModeT(GL_REPEAT);
+	albedoMap->setUseMipmaps(true);
+
+	picture->m_texture = albedoMap;
+
+	picture->m_material = MyMaterial::create();
+	picture->m_material->setUseHapticShading(true);
+	picture->setStiffness(2000.0, true);
+	picture->m_material->setWhite();
+	picture->setUseTexture(true);
+
+	material = std::dynamic_pointer_cast<MyMaterial>(picture->m_material);
+	material->hasTexture = false;
+
+	world->addChild(picture);
     world->addChild(table);
 }
 
@@ -2557,7 +2602,7 @@ void SimonSaysLogic()
 
 					ssIndicatorLight->m_material->setGreen();
 					ssIndicatorCD = 2;
-					if (ssRound >=2) {
+					if (ssRound >=1) {
 						UnlockCover(covers[2]);
 					}
 				}
@@ -3110,11 +3155,17 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay); 
     }
-    else if (a_key == GLFW_KEY_D && a_action == GLFW_PRESS)
-    {
+	else if (a_key == GLFW_KEY_D && a_action == GLFW_PRESS)
+	{
 		cout << "CHEATER" << endl;
-        PrintAnswers(); // prints answers
-    }
+		PrintAnswers(); // prints answers
+	}
+	else if (a_key == GLFW_KEY_S && a_action == GLFW_PRESS)
+	{
+		cout << "CHEATER" << endl;
+		enableStrikes = !enableStrikes;
+		ToggleStrikes();
+	}
     else if (a_key == GLFW_KEY_RIGHT)
     {
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), cDegToRad(180));
