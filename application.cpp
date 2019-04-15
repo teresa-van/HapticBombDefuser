@@ -482,6 +482,7 @@ vector<bool> colorLights;
 vector<cMesh*> colorMeshes;
 int msCount = 0;
 cMesh* ssIndicatorLight;
+int ssIndicatorCD = 0;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -609,11 +610,12 @@ void CreateStartScreen()
     startScreen->rotateAboutGlobalAxisRad(cVector3d(1,0,0), cDegToRad(90));
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/deathscreen.png");
+    albedoMap->loadFromFile("textures/startscreen.png");
     albedoMap->setWrapModeS(GL_REPEAT);
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
     startScreen->m_texture = albedoMap;
+	startScreen->m_material->setWhite();
     startScreen->setUseTexture(true);
 	startScreen->setUseTransparency(true, true);
 	if (!gameStarted)
@@ -786,8 +788,6 @@ void CreateBomb()
     material->hasTexture = true;
     mesh->setUseTexture(true);
     
-    bomb->rotateAboutGlobalAxisDeg(cVector3d(0,0,1), 180);
-
 	if (gameStarted)
 		world->addChild(bomb);
 }
@@ -1379,8 +1379,8 @@ void CreateBrailleLegend()
     mesh->setUseTransparency(true, true);
 	
     mesh->m_material = MyMaterial::create();
-    //mesh->m_material->setWhite();
-    //mesh->m_material->setUseHapticShading(true);
+    mesh->m_material->setWhite();
+    mesh->m_material->setUseHapticShading(true);
     mesh->setStiffness(2000.0, true);
 
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
@@ -2475,6 +2475,7 @@ void GenerateSimonSaysSequences() {
 void SimonSaysLogic()
 {
 	if (SSsequenceSimon) {
+		ssIndicatorLight->m_material->setGrayDark();
 		if (extCount != msCount) {
 		if (msCount%2 == 0)
 			colorLights[sequence[ssRound][ssSequenceIndex]] = true;
@@ -2486,6 +2487,10 @@ void SimonSaysLogic()
 		if (ssSequenceIndex >= ssRound*2+4) {
 			SSsequenceSimon = false;
 			SSsequenceStart = true;
+			ssIndicatorLight->m_material->setYellow();
+			
+			
+
 		}
 	}
 	else {
@@ -2499,6 +2504,8 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 					cout << "bad" << endl;
+					ssIndicatorLight->m_material->setRed();
+					ssIndicatorCD = 3;
 					Strike();
 //					extCount = 0;
 				}
@@ -2523,8 +2530,12 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 //					SSsequenceStart = false;
-					if (ssRound >=2)
+
+					ssIndicatorLight->m_material->setGreen();
+					ssIndicatorCD = 2;
+					if (ssRound >=2) {
 						UnlockCover(covers[2]);
+					}
 				}
 			}
 			}
@@ -2896,7 +2907,7 @@ int main(int argc, char* argv[])
 	
     CreateNumberTextures();
 	CreateOtherTextures();
-//	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
+	RandomizePanelPreferences();	// uncomment for random, but sequence of puzzle might be looped
 
     // Wires
     CreateWires();
@@ -2988,6 +2999,8 @@ int main(int argc, char* argv[])
                 startTime = previousTime;
                 if (indicatorCD > 0) 
 					indicatorCD--;
+				if (ssIndicatorCD > 0)
+					ssIndicatorCD--;
 			}
             
         }
@@ -3401,9 +3414,22 @@ void updateHaptics(void)
 		   
 			UpdateSlidingPictures(timeInterval);
 
+
+		
+				
+			if (!covers[2]->coverUnlocked) {
+				SimonSaysLogic();
+				UpdateSimonSays();
+			}
+			else {
+					ssIndicatorLight->m_material->setGreen();
+			}
+			if (ssIndicatorCD == 1 && !covers[2]->coverUnlocked) 
+				ssIndicatorLight->m_material->setGrayDim();
+
 //		   SimonSaysLogic(timeInterval);
-			SimonSaysLogic();
-		   UpdateSimonSays();
+//			SimonSaysLogic();
+//		   UpdateSimonSays();
 		   extCount = msCount;
 		   
 	   }
