@@ -3,9 +3,9 @@
 /////////////////////
 
 STEPS:
-1. Extract to an appropriate folder inside the chai3d folder before making/running. (chai3d-3.2.0/aFolder/CPSC599A3)
+1. Extract to an appropriate folder inside the chai3d folder before making/running. (chai3d-3.2.0/aFolder/HapticBombDefuser)
 2. Build the project by using the 'make' command in the command line.
-3. Run ./a3 inside chai3d-3.2.0/bin/lin-x86_64
+3. Run ./bomb inside chai3d-3.2.0/bin/lin-x86_64
 
 Dependencies:
 	chai3d
@@ -19,7 +19,7 @@ Makefile build commands:
 		Deletes executable, object files and object directory
 
 Run command:
-	./a3
+	./bomb
 
 ///////////////////////
 //  HOW TO USE  //
@@ -27,6 +27,10 @@ Run command:
 
 Key commands:
   On Falcon:
-  [+] = Apply next texture to tool
-  [-] = Apply previous texture to tool
-  [swirl] = Disable texture on tool / disable texture-texture rendering
+  [+]\[-] = Rotate bomb
+  [swirl] = Cut wires
+
+  S = Toggle strike counter (3 or infinite lives)
+  F = Toggle full screen
+  M = Mirrored display
+  Esc = Exit

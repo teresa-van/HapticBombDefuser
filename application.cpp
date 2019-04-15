@@ -2838,7 +2838,7 @@ int main(int argc, char* argv[])
         glfwWindowHint(GLFW_STEREO, GL_FALSE);
     }
 
-    window = glfwCreateWindow(w, h, "Haptical Boom", NULL, NULL);
+    window = glfwCreateWindow(w, h, "Keep Touching and Nobody Explodes", NULL, NULL);
     if (!window)
     {
         cout << "failed to create window" << endl;
