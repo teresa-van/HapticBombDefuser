@@ -3108,7 +3108,8 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     }
     else if (a_key == GLFW_KEY_D && a_action == GLFW_PRESS)
     {
-        PrintAnswers();
+		cout << "CHEATER" << endl;
+        PrintAnswers(); // prints answers
     }
     else if (a_key == GLFW_KEY_RIGHT)
     {
