@@ -2428,13 +2428,22 @@ void SimonSaysLogic()
 		}
 	}
 	else {
-		if (extCount != msCount) {
 		if (SSsequenceStart) {
-			if (ssEntry.size()>0) {
-				if (sequence[ssRound][ssSequenceEntry] != ssEntry[ssSequenceEntry]) 
+			if (extCount != msCount) {
+		
+			if (ssEntry.size()>ssSequenceEntry) {
+				if (sequence[ssRound][ssSequenceEntry] != ssEntry[ssSequenceEntry]) {
+					ssEntry.clear();
+					SSsequenceStart = false;
+					ssSequenceEntry = 0;
+					ssSequenceIndex = 0;
 					cout << "bad" << endl;
-				else if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) 
-					cout << "good" << endl;
+//					extCount = 0;
+				}
+				else {// if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) 
+					ssSequenceEntry++;
+//					cout << "good" << endl;
+				}
 /*				if (sequence[ssRound][ssSequenceEntry] != ssEntry[ssSequenceEntry]) {
 					ssEntry.clear();
 					SSsequenceStart = false;
@@ -2443,11 +2452,19 @@ void SimonSaysLogic()
 				else if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) {
 					ssSequenceEntry++;
 				}
+				*/
 				if (ssSequenceEntry >= ssRound*2+4) {
 					cout <<"round " << ssRound << "cleared" << endl;
 					ssRound++;
+					ssEntry.clear();
 					SSsequenceStart = false;
-				}*/
+					ssSequenceEntry = 0;
+					ssSequenceIndex = 0;
+//					SSsequenceStart = false;
+					if (ssRound >=1)
+						covers[2]->coverUnlocked = true;
+				}
+			}
 			}
 			
 		}
@@ -2457,8 +2474,6 @@ void SimonSaysLogic()
 			else colorLights[sequence[ssRound][0]] = false;
 		}
 		
-	}
-	
 }
 	
 ////////// flashing slow for not started
@@ -3243,28 +3258,38 @@ void updateHaptics(void)
 					oldNumButton[i] = curNumButton;
 				}
 				
-				for (int i = 0; i < 4; i++) {
-					bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
-					if (curNumButton != oldSSButton[i]) {
-						if (!oldSSButton[i] && curNumButton) {
-							if (i == sequence[ssRound][0] && !SSsequenceStart)
-								SSsequenceSimon = true;
-							if (SSsequenceStart) {
-								colorLights[sequence[ssRound][ssSequenceEntry]] = true;
-								ssEntry.push_back(i);
+				
+					for (int i = 0; i < 4; i++) {
+						if (!covers[2]->coverUnlocked) {
+						bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
+						if (curNumButton != oldSSButton[i]) {
+							if (!SSsequenceSimon||SSsequenceStart) {
+								if (!oldSSButton[i] && curNumButton) {
+//									colorLights[sequence[ssRound][i]] = true;
+									if (!SSsequenceSimon && !SSsequenceStart) {
+										if (i == sequence[ssRound][0])
+											SSsequenceSimon = true;
+										}
+//									else if (i == sequence[ssRound][ssSequenceEntry]) ssEntry.push_back(i);
+									else ssEntry.push_back(i);
+		//							else if (i == sequence[ssRound][ssSequenceEntry] && SSsequenceStart) {
+	//								else if (SSsequenceStart) {
+	//									colorLights[sequence[ssRound][ssSequenceEntry]] = true;
+	//									ssEntry.push_back(i);
+	//								}
+		//								SimonSaysLogic(i);
+//									for(int i : ssEntry)
+//										cout << i;
+//									cout << endl;
+								}							
+								else {
+	//								if (SSsequenceStart) 
+//											colorLights[sequence[ssRound][i]] = false;
+								}
 							}
-//								SimonSaysLogic(i);
-							for(int i : ssEntry)
-								cout << i;
-							cout << endl;
 						}
-						
+						oldSSButton[i] = curNumButton;
 					}
-					else {
-						if (SSsequenceStart) 
-								colorLights[sequence[ssRound][ssSequenceEntry]] = false;
-					}
-					oldSSButton[i] = curNumButton;
 				}
 /*				for (int i = 0; i < 4; i++) {
 					bool curNumButton = CheckButton(colorButtons[i], timeInterval, 40 + i);
