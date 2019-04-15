@@ -26,7 +26,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
-int timeLimit[4] = { 9,9,5,9 }; // mm:ss
+int timeLimit[4] = { 1,5,0,0 }; // mm:ss
 bool gameStarted = false;
 bool enableStrikes = true;
 extern int wireID = 6;
