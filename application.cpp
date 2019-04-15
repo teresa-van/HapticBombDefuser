@@ -26,6 +26,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+int timeLimit[4] = { 9,9,5,9 }; // mm:ss
 bool gameStarted = false;
 
 extern int wireID = 6;
@@ -304,7 +305,6 @@ const string digitalNumberTextureFiles[10] =
 	"dig9.png",
 };
 
-int timeLimit[4] = {0,5,0,0}; // mm:ss
 #endif
 
 vector<cTexture2dPtr> timerNumberTextures;
@@ -536,8 +536,8 @@ void RandomizePanelPreferences() {
 	vector<int> randomPVs0 = Random(6);
 	for (int i: randomPVs0)
 		panelOrderPuzzles.push_back(panelOrderPuzzels0[i]);
-/*
-	for (int i:panelOrderBigButton)
+
+/*	for (int i:panelOrderBigButton)
 		cout << i;
 	cout << endl;
 	for (int i:panelOrderClues)
@@ -2489,7 +2489,12 @@ void GenerateSimonSaysSequences() {
 		}
 		sequence.push_back(tempSeq);
 	}
-	
+/*	
+	for (vector<int> list : sequence) {
+		for (int v : list)
+			cout << v;
+		cout << endl;
+	}*/
 }
 
 
@@ -2524,7 +2529,6 @@ void SimonSaysLogic()
 					SSsequenceStart = false;
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
-//					cout << "bad" << endl;
 					ssIndicatorLight->m_material->setRed();
 					ssIndicatorCD = 3;
 					Strike();
@@ -2544,7 +2548,6 @@ void SimonSaysLogic()
 				}
 				*/
 				if (ssSequenceEntry >= ssRound*2+4) {
-//					cout <<"round " << ssRound << "cleared" << endl;
 					ssRound++;
 					ssEntry.clear();
 					SSsequenceStart = false;
@@ -2734,6 +2737,7 @@ void PrintAnswers()
 	
 
 }
+
 
 int main(int argc, char* argv[])
 {
@@ -3119,6 +3123,7 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     {
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), cDegToRad(180));
     }
+
 }
 
 //------------------------------------------------------------------------------
