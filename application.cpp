@@ -248,10 +248,12 @@ const string picturePuzzleTextureFiles[9] =
 };
 
 vector<cTexture2dPtr> otherTextures;
-const string otherTextureFiles[13] =
+const string otherTextureFiles[4] =
 {
 	"red.png",
 	"green.png",
+	"detonate.png",
+	"diallockline.png",
 };
 
 vector<cTexture2dPtr> picturePuzzleNumberTextures;
@@ -850,7 +852,7 @@ void CreateWires()
 
 void CreateCutWires()
 {
-    double posX = -0.0035;
+    double posX = -0.0042;
     double posY = 0.0005;
     double posZ = 0.0025;
     double spacing = 0.003;
@@ -968,6 +970,18 @@ void CreateButton(pbutton *o) {
 	material->hasTexture = false;
 	material->id = 7;
 
+	cMesh * backPlane = new cMesh();
+	cCreateCylinder(backPlane, 0.004, b->radius + 0.0008, 20, 10, 10, true, true, b->position + cVector3d(0.0025,0,0));
+	backPlane->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+	backPlane->createAABBCollisionDetector(toolRadius);
+	backPlane->computeBTN();
+	backPlane->m_material = MyMaterial::create();
+	backPlane->m_material->setBlack();
+	backPlane->m_material->setUseHapticShading(true);
+	backPlane->setStiffness(2000.0, true);
+	MyMaterialPtr material1 = std::dynamic_pointer_cast<MyMaterial>(backPlane->m_material);
+	material1->hasTexture = false;
+
     bigButtonIndicator = new cMesh();
     cCreateSphere(bigButtonIndicator, 0.002, 10, 5);
 	bigButtonIndicator->setLocalPos(0.0005, 0.006, 0.006);
@@ -981,6 +995,18 @@ void CreateButton(pbutton *o) {
 	MyMaterialPtr material0 = std::dynamic_pointer_cast<MyMaterial>(bigButtonIndicator->m_material);
 	material0->hasTexture = false;
 
+	cMesh * mesh = new cMesh();
+	cCreatePlane(mesh, 0.015, 0.0075, cVector3d(0, 0.0045, 0.014));
+	mesh->rotateAboutGlobalAxisDeg(cVector3d(0, 0, 1), 90);
+	//mesh->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+	mesh->scale(0.55);
+	mesh->m_texture = otherTextures[2];
+	mesh->setUseTexture(true);
+	mesh->setUseTransparency(true);
+	mesh->m_material->setWhite();
+	b->msphere->addChild(mesh);
+
+	panels[occupiedPanels[1]]->addChild(backPlane);
 	panels[occupiedPanels[1]]->addChild(b->msphere);
 	panels[occupiedPanels[1]]->addChild(bigButtonIndicator);
 
@@ -1314,7 +1340,6 @@ void CreateBraillePuzzle()
     btex->setWrapModeT(GL_REPEAT);
     btex->setUseMipmaps(true);
 
-    // Create timer number planes
     double spacing = 0.0058;
     double posX = -0.009;
     for (int i = 0; i < 4; i++)
@@ -1559,7 +1584,7 @@ void CreateLockPad(pbutton *o)
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(mesh->m_material);
 
     cTexture2dPtr albedoMap = cTexture2d::create();
-    albedoMap->loadFromFile("textures/brailleTornLegend.png");
+    albedoMap->loadFromFile("textures/diallockline.png");
     albedoMap->setWrapModeS(GL_REPEAT);
     albedoMap->setWrapModeT(GL_REPEAT);
     albedoMap->setUseMipmaps(true);
@@ -1587,7 +1612,7 @@ void CreateLockPad(pbutton *o)
 	
 	
 //	cVector3d pos(-0.00,-0.0027,-0.0055);
-	cVector3d pos(0.0,-0.002,0.0);
+	cVector3d pos(-0.002, -0.002, 0);
 	cVector3d gap(0.0035,0,0);
 //	cVector3d gap(0,0,0.0);
 	for (int i=0; i<3; i++) {
@@ -1619,7 +1644,7 @@ void CreateLockPad(pbutton *o)
 		m->createAABBCollisionDetector(toolRadius);
 		m->computeBTN();
 		m->m_material = MyMaterial::create();
-		m->m_material->setYellowMoccasin();
+		m->m_material->setColorf(1.0, 0.8, 0.29);
 		m->m_material->setUseHapticShading(true);
 		m->setStiffness(1000.0, true);
 		m->m_material->setHapticTriangleSides(true, true);
