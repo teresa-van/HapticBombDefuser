@@ -229,6 +229,8 @@ int indicatorCD = 0;
 bool bigButtonSolved = false;
 pbutton *lockbutton;
 
+int strikes = 0;
+
 ///////////////////////////////////////////////////
 
 vector<cTexture2dPtr> picturePuzzleTextures;
@@ -304,7 +306,7 @@ int timeLimit[4] = {0,5,0,0}; // mm:ss
 #endif
 
 vector<cTexture2dPtr> timerNumberTextures;
-const string timerNumberTextureFiles[11] = 
+const string timerNumberTextureFiles[13] = 
 {
     "0.png",
     "1.png",
@@ -317,8 +319,11 @@ const string timerNumberTextureFiles[11] =
     "8.png",
     "9.png",
     "dots.png",
+	"nostrike.png",
+	"strike.png",
 };
 
+vector<cMesh*> strikePlanes;
 vector<cMesh*> timerNumbers;
 double startTime;
 
@@ -583,6 +588,17 @@ void GameOver(bool win)
         world->addChild(winScreen);
     else
         world->addChild(deathScreen);
+}
+
+void Strike()
+{
+	strikePlanes[strikes]->m_texture = timerNumberTextures[12];
+	strikes += 1;
+	if (strikes == 3)
+	{
+		GameOver(false);
+		return;
+	}
 }
 
 void CreateStartScreen()
@@ -2068,6 +2084,22 @@ void CreateTimer()
     timerNumbers[3] = timerNumbers[2];
     timerNumbers[2] = temp;
 
+	// Create strikes
+	spacing = 0.0058;
+	posX = -0.01;
+	for (int i = 0; i < 3; i++)
+	{
+		cMesh * mesh = new cMesh();
+		cCreatePlane(mesh, spacing, spacing, cVector3d(posX + i	 * spacing, 0.015, 0.0045));
+		mesh->rotateAboutGlobalAxisDeg(cVector3d(0, 1, 0), 90);
+		mesh->rotateAboutGlobalAxisRad(cVector3d(1, 0, 0), cDegToRad(90));
+		mesh->scale(0.55);
+		mesh->m_texture = timerNumberTextures[11];
+		mesh->setUseTexture(true);
+		timer->addChild(mesh);
+		strikePlanes.push_back(mesh);
+	}
+
     timer->setLocalPos(0.006, 0.0, -0.011);
 
     bomb->addChild(timer);
@@ -2368,6 +2400,7 @@ void UpdateNumPadScreen(int i) {
 			numPadEntry.clear();
 			cout << "invalid password\n";
 			indicatorCD = 3;
+			Strike();
 		}
 	}
 	else {
@@ -2466,6 +2499,7 @@ void SimonSaysLogic()
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
 					cout << "bad" << endl;
+					Strike();
 //					extCount = 0;
 				}
 				else {// if (sequence[ssRound][ssSequenceEntry] == ssEntry[ssSequenceEntry]) 
@@ -3248,6 +3282,7 @@ void updateHaptics(void)
 						else {
 							bigButtonIndicator->m_material->setRed();
 							indicatorCD = 3;
+							Strike();
 						}
 					}
 				}
@@ -3272,7 +3307,8 @@ void updateHaptics(void)
 							&& dialValues.z() == dialOrder[2] && !covers[1]->coverUnlocked)
 								UnlockCover(covers[1]);
 								//covers[1]->coverUnlocked = true;
-
+						else
+							Strike();
 					}
 		//			else
 		//				cout << "released\n";
