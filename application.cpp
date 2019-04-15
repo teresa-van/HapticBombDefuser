@@ -26,6 +26,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+int timeLimit[4] = { 9,9,5,9 }; // mm:ss
 bool gameStarted = false;
 
 extern int wireID = 6;
@@ -304,7 +305,6 @@ const string digitalNumberTextureFiles[10] =
 	"dig9.png",
 };
 
-int timeLimit[4] = {0,5,0,0}; // mm:ss
 #endif
 
 vector<cTexture2dPtr> timerNumberTextures;
@@ -536,7 +536,7 @@ void RandomizePanelPreferences() {
 	vector<int> randomPVs0 = Random(6);
 	for (int i: randomPVs0)
 		panelOrderPuzzles.push_back(panelOrderPuzzels0[i]);
-/*
+
 	for (int i:panelOrderBigButton)
 		cout << i;
 	cout << endl;
@@ -546,7 +546,7 @@ void RandomizePanelPreferences() {
 	for (int i:panelOrderPuzzles)
 		cout << i;
 	cout << endl;
-*/
+
 	occupiedPanels.clear();
 
 	occupiedPanels.push_back(panelOrderClues[0]);
@@ -561,10 +561,10 @@ void RandomizePanelPreferences() {
 	occupiedPanels.push_back(panelOrderPuzzles[5]);
 	occupiedPanels.push_back(panelOrderClues[3]);
 
-/*	for (int i:occupiedPanels)
+	for (int i:occupiedPanels)
 		cout << i;
 	cout << endl;
-	*/
+	
 }
 
 void SetColors()
@@ -966,7 +966,6 @@ void CreateButton(pbutton *o) {
 	b->msphere->m_material->setRed();
 	b->msphere->m_material->setUseHapticShading(true);
 	b->msphere->setStiffness(2000.0, true);
-	b->msphere->setFriction(3.5, 2.0);
 	MyMaterialPtr material = std::dynamic_pointer_cast<MyMaterial>(b->msphere->m_material);
 	material->hasTexture = false;
 	material->id = 7;
@@ -2490,6 +2489,11 @@ void GenerateSimonSaysSequences() {
 		sequence.push_back(tempSeq);
 	}
 	
+	for (vector<int> list : sequence) {
+		for (int v : list)
+			cout << v;
+		cout << endl;
+	}
 }
 
 
@@ -2524,7 +2528,7 @@ void SimonSaysLogic()
 					SSsequenceStart = false;
 					ssSequenceEntry = 0;
 					ssSequenceIndex = 0;
-//					cout << "bad" << endl;
+					cout << "bad" << endl;
 					ssIndicatorLight->m_material->setRed();
 					ssIndicatorCD = 3;
 					Strike();
@@ -2544,7 +2548,7 @@ void SimonSaysLogic()
 				}
 				*/
 				if (ssSequenceEntry >= ssRound*2+4) {
-//					cout <<"round " << ssRound << "cleared" << endl;
+					cout <<"round " << ssRound << "cleared" << endl;
 					ssRound++;
 					ssEntry.clear();
 					SSsequenceStart = false;
@@ -2720,19 +2724,6 @@ void PrintAnswers()
 		}
 	}
 	cout << endl;
-	for (vector<int> list : sequence) {
-		cout << "4colors: ";
-		for (int v : list)
-			cout << v;
-		if (list.size()>6) cout <<"(not used)";
-		cout << endl;
-	}
-	cout << "numPad PW : ";
-	for (int i=0; i<6; i++)
-		cout << numPadPW[i];
-	cout << endl;
-	
-
 }
 
 int main(int argc, char* argv[])
@@ -2995,7 +2986,7 @@ int main(int argc, char* argv[])
     SetPanelPositions();
     
 //    cout << dialOrder << endl;
-//    PrintAnswers();
+    PrintAnswers();
     
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -3106,10 +3097,6 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay);
     }
-    else if (a_key == GLFW_KEY_D && a_action == GLFW_PRESS)
-    {
-        PrintAnswers();
-    }
     else if (a_key == GLFW_KEY_RIGHT)
     {
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,1), cDegToRad(180));
@@ -3118,6 +3105,7 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     {
 			bomb->rotateAboutLocalAxisDeg(cVector3d(0,0,-1), cDegToRad(180));
     }
+
 }
 
 //------------------------------------------------------------------------------
